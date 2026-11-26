@@ -1,57 +1,31 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
   <?php
 		session_start();
-		if(!$_SESSION['pc_login'] || $_SESSION['pc_priv'] != "BLCK")
-		{
-			header("Location: index.php?err=expired");
-			exit;
-		}
+		require_once __DIR__ . '/connectDB.php';
+		require_once __DIR__ . '/dictionary.php';
+		require_login('BLCK');
 		$name	= $_SESSION['pc_name'];
 		
-		include('connectDB.php');
-		include("dictionary.php");
-		
-		// Padam Akaun
-		if(isset($_GET['DEL']))
+		// Padam Akaun (not one's own; an account that registered events cannot be deleted)
+		$ID = request_id($_GET, 'DEL');
+		if($ID !== null)
 		{
-			// get ID value
-			$ID = mysql_real_escape_string($_GET['DEL']);
-			
-			// delete the entry
-			$result = mysql_query("DELETE FROM ADMIN WHERE NO_ID = \"$ID\""); 
-			
-			// check for deletion
-			if ($result)
+			if ($ID !== (int) $_SESSION['pc_ident'] && db_query("DELETE FROM ADMIN WHERE NO_ID = ?", [$ID]) && mysqli_affected_rows($condb) === 1)
 			{
-			   echo '<html>
-						<head>
-							<script>
-								window.alert("Akaun pentadbir berjaya di padam!");
-							</script>
-							<meta http-equiv="refresh" content="0; url=list_admin.php" />
-						</head>
-					</html>';
+				alert_page("Akaun pentadbir berjaya di padam!", "list_admin.php");
 			}
 			else
 			{
-				//echo "SQL insert statement failed.<br>" . mysql_error();
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Akaun pentadbir gagal di padam!");
-								window.history.go(-1);
-							</script>
-						</head>
-					</html>';
+				alert_page("Akaun pentadbir gagal di padam!", null, true);
 			}
 		}
 		
-		$sql	= "SELECT * FROM ADMIN ORDER BY NAME";
-		
-		$result = mysql_query($sql) or die("SQL select statement failed");
-	?>
+		$result = db_query("SELECT * FROM ADMIN ORDER BY NAME");
+	
+?>
     <title>PINCard</title>
 	
 	<link rel="apple-touch-icon" sizes="120x120" href="favicons/apple-touch-icon.png?v=kPgEkaXqbz">
@@ -119,7 +93,7 @@
 		  	<div class="sidebar content-box" style="display: block;">
                 <ul class="nav">
                     <!-- Main menu -->
-                    <?php include("nav.php"); ?>
+                    <?php include __DIR__ . '/nav.php'; ?>
                 </ul>
              </div>
 		  </div>
@@ -145,7 +119,7 @@
 							$D_BC	= false;
 							
 							// iterate through all rows in result set
-							while ($row = mysql_fetch_array($result))
+							while ($row = mysqli_fetch_array($result))
 							{
 								$BIL++;
 								$D_BC	= true;
@@ -158,15 +132,15 @@
 								// output student information
 								echo "<tr>";
 								echo "<td align=center>$BIL</td>";
-								echo "<td align=center>$NO_ID</td>";
+								echo "<td align=center>" . e($NO_ID) . "</td>";
 								echo "
-									<td>$NAME</td>
-									<td align=\"center\">$ACC_TYPE[$TYPE]</font></td>
+									<td>" . e($NAME) . "</td>
+									<td align=\"center\">" . e($ACC_TYPE[$TYPE] ?? $TYPE) . "</td>
 									<td align=\"center\">
-										<a href='amd_admin.php?AMD=$NO_ID'>
+										<a href='amd_admin.php?AMD=" . e($NO_ID) . "'>
 											<button class='btn btn-outline btn-warning' type='button' value='Pinda'>Pinda</button>
 										</a>
-										<button class='btn btn-outline btn-danger' type='button' value='Padam' onClick='confirmDel(\"$NO_ID\")'>Padam</button>
+										<button class='btn btn-outline btn-danger' type='button' value='Padam' onClick='confirmDel(" . e(js((string) $NO_ID)) . ")'>Padam</button>
 									</td>";
 								echo "</tr>";
 							}
@@ -207,7 +181,7 @@
 			var del = confirm("Adakah anda pasti untuk memadam akaun pentadbir ini?");
 			if (del == true)
 			{
-				window.location.assign("list_admin.php?DEL=" + nums);
+				window.location.assign("list_admin.php?DEL=" + encodeURIComponent(nums));
 			} else 
 			{
 				alert("Akaun pentadbir tidak di padam.");

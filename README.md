@@ -1,52 +1,35 @@
-Bootstrap Admin Theme 3
-=====================
+# PINCard
 
-<a href='https://github.com/VinceG/Bootstrap-Admin-Theme' target="_blank">Admin Theme for Bootstrap 2.x</a>
+A student-activity merit system (2017) for the residential colleges of UiTM Cawangan Johor, Kampus Segamat, by the
+KIK PERSADA group. Hostel staff register student events and the students who attend them (one by one or from a CSV
+file); each attendance earns merit credit by event level and type of involvement, and students log in to see and print
+their own attendance report. Native PHP pages, MySQL, Bootstrap 3 (Bootstrap Admin Theme 3), UI in Malay.
 
-A generic admin theme built with Bootstrap 3 free for both personal and commercial use. 
+Now an archived project: https://app.dimensikini.xyz/PINCard/ (PHP 8.5 since November 2026).
 
-This is still a work in progress.
+## Accounts
 
-Pages:
+- **Blue** (student): student number, with the IC number (digits only) as the password. Sees their details and report.
+- **Red** (Penyelia Asrama): events, attendance, students, bulk import.
+- **Black** (Penolong & Pengurus Asrama): everything Red does, plus admin accounts, programmes, colleges, organisers and
+  the new-semester resets.
 
-- Login
-- Sign Up
-- Admin Dashboard
-- Full Calendar (Viewing calendar, adding events, dragging events)
-- Statistics & Charts (Multiple examples of Pie, Bar, Line charts using Morris.js, knob.js, jquery flot, easypiechart)
-- Buttons & Icons
-- WYSIWYG & HTML 5 Editors
-- Forms & Wizard
-- Form Plugins (Validation, masked input, tags, color picker, date, time, location, inline edit and more)
-- Tables & Bootstrap dataTables
-- UI & Interface Elements (Modals, Popovers, Tooltips, Alerts, Notifications, Labels, Progress Bars)
+## Setup
 
-Demo:
+1. PHP 8.1+ (built for 8.5) with mysqli and fileinfo, and MySQL/MariaDB.
+2. Create a database and import `sql/pincard_db_structure.sql` (tables and the programme, college and organiser lists).
+3. Copy `config.example.php` to `config.php` and fill in the database credentials.
+4. Add the first Black account: `php tools/add-admin.php <staff number> BLCK "<name>"` (asks for the password).
 
-http://vinceg.github.com/Bootstrap-Admin-Theme-3
+Upgrading a database from before November 2026: run `sql/2026-11-hash-passwords.sql`, then
+`php tools/hash-passwords.php` (admin passwords were stored in plain text).
 
-<p>&copy; <a href='http://vadimg.com' target="_blank">Vadim Vincent Gabriel</a> <a href='https://twitter.com/gabrielva' target='_blank'>Follow @gabrielva</a> 2012</p>
+Bulk files: attendance takes one student number per line; the student import takes
+`student number, name, IC number, programme code, semester, college code, room` per line. Both are CSV, up to 500 KB.
 
-License
-===============
-The MIT License (MIT)
+The `.htaccess` keeps `config.php`, `connectDB.php`, `sql/`, `tools/` and the notes from being served (Apache /
+LiteSpeed).
 
-Copyright (c) 2013 - Vincent Gabriel
+## License
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+The admin theme is MIT-licensed (see `LICENSE`, Vincent Gabriel); the libraries in `vendors/` keep their own licenses.

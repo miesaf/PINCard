@@ -1,133 +1,70 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
   <?php
 		session_start();
-		if(!$_SESSION['pc_login'] || $_SESSION['pc_priv'] != "BLCK")
-		{
-			header("Location: index.php?err=expired");
-			exit;
-		}
+		require_once __DIR__ . '/connectDB.php';
+		require_once __DIR__ . '/dictionary.php';
+		require_login('BLCK');
 		$name	= $_SESSION['pc_name'];
 		
-		include('connectDB.php');
-		include("dictionary.php");
-		
-		// Tambah Akaun
+		// Tambah program pengajian
 		if(isset($_POST['REG']))
-		{	
-			// Variables from tadbir_program.php
-			$ID_PROG	= mysql_real_escape_string($_POST['ID_PROG']);
-			$PROG		= mysql_real_escape_string($_POST['PROG']);
-
-			//SQL query command
-			$sql="INSERT INTO PROG (ID_PROG, PROG) VALUES ('$ID_PROG', '$PROG')";
+		{
+			$ID_PROG	= request_text($_POST, 'ID_PROG') ?? '';
+			$PROG	= request_text($_POST, 'PROG') ?? '';
 			
-			// execute query
-			$exe_sql = mysql_query($sql);
-			
-			// confirming the record is added
-			if ($exe_sql)
+			if($ID_PROG === '' || $PROG === '')
 			{
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Pendaftaran program pengajian berjaya!");
-							</script>
-							<meta http-equiv="refresh" content="0; url=ad_prog.php" />
-						</head>
-					</html>';
+				alert_page("Sila lengkapkan kod dan nama!", null, true);
+			}
+			elseif(db_query("INSERT INTO PROG (ID_PROG, PROG) VALUES (?, ?)", [$ID_PROG, $PROG]))
+			{
+				alert_page("Pendaftaran program pengajian berjaya!", "ad_prog.php");
 			}
 			else
 			{
-				echo "SQL insert statement failed.<br>" . mysql_error();
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Pendaftaran program pengajian gagal!");
-								window.history.go(-1);
-							</script>
-						</head>
-					</html>';
+				alert_page("Pendaftaran program pengajian gagal!", null, true);
 			}
 		}
 		
-		// Pinda Akaun
+		// Pinda program pengajian
 		if(isset($_POST['AMD_PRG']))
 		{
-			$ID2		= mysql_real_escape_string($_POST['ID2']);
-			$ID_PROG	= mysql_real_escape_string($_POST['ID_PROG']);
-			$PROG		= mysql_real_escape_string($_POST['PROG']);
-
-			$sql="UPDATE PROG SET ID_PROG = '$ID_PROG', PROG = '$PROG' WHERE ID_PROG = '$ID2'";
+			$ID2	= request_text($_POST, 'ID2') ?? '';
+			$ID_PROG	= request_text($_POST, 'ID_PROG') ?? '';
+			$PROG	= request_text($_POST, 'PROG') ?? '';
 			
-			// execute query
-			$exe_sql = mysql_query($sql);
-			
-			// confirming the record is added
-			if ($exe_sql)
+			if($ID_PROG === '' || $PROG === '')
 			{
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Pindaan program pengajian berjaya!");
-							</script>
-							<meta http-equiv="refresh" content="0; url=ad_prog.php" />
-						</head>
-					</html>';
+				alert_page("Sila lengkapkan kod dan nama!", null, true);
+			}
+			elseif(db_query("UPDATE PROG SET ID_PROG = ?, PROG = ? WHERE ID_PROG = ?", [$ID_PROG, $PROG, $ID2]))
+			{
+				alert_page("Pindaan program pengajian berjaya!", "ad_prog.php");
 			}
 			else
 			{
-				echo "SQL insert statement failed.<br>" . mysql_error();
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Pindaan program pengajian gagal!");
-								window.history.go(-1);
-							</script>
-						</head>
-					</html>';
+				alert_page("Pindaan program pengajian gagal!", null, true);
 			}
 		}
 		
-		// Padam Akaun
-		if(isset($_GET['DEL']))
+		// Padam program pengajian (refused while students or events still use it)
+		$ID = request_text($_GET, 'DEL');
+		if($ID !== null)
 		{
-			// get ID value
-			$ID = mysql_real_escape_string($_GET['DEL']);
-			
-			// delete the entry
-			$result = mysql_query("DELETE FROM PROG WHERE ID_PROG = \"$ID\""); 
-			
-			// check for deletion
-			if ($result)
+			if (db_query("DELETE FROM PROG WHERE ID_PROG = ?", [$ID]) && mysqli_affected_rows($condb) === 1)
 			{
-			   echo '<html>
-						<head>
-							<script>
-								window.alert("Program pengajian berjaya di padam!");
-							</script>
-							<meta http-equiv="refresh" content="0; url=ad_prog.php" />
-						</head>
-					</html>';
+				alert_page("Program pengajian berjaya di padam!", "ad_prog.php");
 			}
 			else
 			{
-				//echo "SQL insert statement failed.<br>" . mysql_error();
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Program pengajian gagal di padam!");
-								window.history.go(-1);
-							</script>
-						</head>
-					</html>';
+				alert_page("Program pengajian gagal di padam!", null, true);
 			}
 		}
 		
-		$sql	= "SELECT * FROM PROG ORDER BY ID_PROG";
-		
-		$result = mysql_query($sql) or die("SQL select statement failed");
+		$result = db_query("SELECT * FROM PROG ORDER BY ID_PROG");
 	?>
     <title>PINCard</title>
 	
@@ -196,7 +133,7 @@
 		  	<div class="sidebar content-box" style="display: block;">
                 <ul class="nav">
                     <!-- Main menu -->
-                    <?php include("nav.php"); ?>
+                    <?php include __DIR__ . '/nav.php'; ?>
                 </ul>
              </div>
 		  </div>
@@ -244,38 +181,40 @@
 					</div>
 					<div class="content-box-large box-with-header">
 <?php
-		$PINDA_ID	= $_GET['AMD'];
-		
-		// create the query
-		$sql = "SELECT * FROM PROG WHERE ID_PROG = \"$PINDA_ID\"";
-		
-		// execute query
-		$result = mysql_query($sql) or die("SQL select statement failed");
-		
-		// iterate through all rows in result set
-		$row = mysql_fetch_array($result);
+		$PINDA_ID	= request_text($_GET, 'AMD') ?? '';
+		$row		= db_row("SELECT * FROM PROG WHERE ID_PROG = ?", [$PINDA_ID]);
 		
 		// extract specific fields
-		$ID_PROG	= $row["ID_PROG"];
-		$PROG		= $row["PROG"];
+		$ID_PROG	= $row["ID_PROG"] ?? "";
+		$PROG	= $row["PROG"] ?? "";
+		
+		if(!$row)
+		{
+			echo "<center><i> Program pengajian tidak dijumpai </i></center>";
+		}
+		else
+		{
 ?>
 						<form id="amd_prog" action="ad_prog.php" method ="POST">
-							<input type="hidden" name="ID2" value="<?php echo $PINDA_ID; ?>">
+							<input type="hidden" name="ID2" value="<?php echo e($PINDA_ID); ?>">
 							<input type="hidden" name="AMD_PRG" value="YES">
 							<fieldset>
 								<div class="form-group">
 									<label>Kod Program Pengajian</label>
-									<input class="form-control" type="text" name="ID_PROG" value="<?php echo $ID_PROG; ?>">
+									<input class="form-control" type="text" name="ID_PROG" value="<?php echo e($ID_PROG); ?>">
 								</div>
 								<div class="form-group">
 									<label>Nama Program Pengajian</label>
-									<input class="form-control" type="text" name="PROG" value="<?php echo $PROG; ?>">
+									<input class="form-control" type="text" name="PROG" value="<?php echo e($PROG); ?>">
 								</div>
 							</fieldset>
 							<div>
 								<button class="btn btn-primary" type="submit" form="amd_prog" value="Submit">Pinda</button>
 							</div>
 						</form>
+<?php
+		}
+?>
 					</div>
 		  		</div>
 <?php
@@ -302,7 +241,7 @@
 							$D_BC	= false;
 							
 							// iterate through all rows in result set
-							while ($row = mysql_fetch_array($result))
+							while ($row = mysqli_fetch_array($result))
 							{
 								$BIL++;
 								$D_BC	= true;
@@ -314,14 +253,14 @@
 								// output student information
 								echo "<tr>";
 								echo "<td align=center>$BIL</td>";
-								echo "<td align=center>$ID_PROG</td>";
+								echo "<td align=center>" . e($ID_PROG) . "</td>";
 								echo "
-									<td>$PROG</td>
+									<td>" . e($PROG) . "</td>
 									<td align=\"center\">
-										<a href='ad_prog.php?AMD=$ID_PROG'>
+										<a href='ad_prog.php?AMD=" . e(urlencode($ID_PROG)) . "'>
 											<button class='btn btn-outline btn-warning btn-sm' type='button' value='Pinda'>Pinda</button>
 										</a>
-										<button class='btn btn-outline btn-danger btn-sm' type='button' value='Padam' onClick='confirmDel(\"$ID_PROG\")'>Padam</button>
+										<button class='btn btn-outline btn-danger btn-sm' type='button' value='Padam' onClick='confirmDel(" . e(js((string) $ID_PROG)) . ")'>Padam</button>
 									</td>";
 								echo "</tr>";
 							}
@@ -365,7 +304,7 @@
 			var del = confirm("Adakah anda pasti untuk memadam program pengajian ini?");
 			if (del == true)
 			{
-				window.location.assign("ad_prog.php?DEL=" + nums);
+				window.location.assign("ad_prog.php?DEL=" + encodeURIComponent(nums));
 			} else 
 			{
 				alert("Program pengajian tidak di padam.");

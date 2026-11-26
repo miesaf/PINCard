@@ -1,11 +1,14 @@
 <?php
 	session_start();
-	// $name = $_SESSION['name'];
-	unset($_SESSION['pc_login']);
-	unset($_SESSION['pc_name']);
-	unset($_SESSION['pc_priv']);
-	unset($_SESSION['pc_ident']);
-	// session_destroy();
+	// Only PINCard's own keys (pc_*): other apps on the host share the session cookie.
+	foreach (array_keys($_SESSION) as $key)
+	{
+		if (str_starts_with((string) $key, 'pc_'))
+		{
+			unset($_SESSION[$key]);
+		}
+	}
+	session_regenerate_id(true);
 ?>
 <html>
 <head>

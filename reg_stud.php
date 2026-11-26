@@ -1,59 +1,37 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
   <?php
 		session_start();
-		if(!$_SESSION['pc_login'] || $_SESSION['pc_priv'] == "BLUE")
-		{
-			header("Location: index.php?err=expired");
-			exit;
-		}
+		require_once __DIR__ . '/connectDB.php';
+		require_once __DIR__ . '/dictionary.php';
+		require_login('REDD', 'BLCK');
 		$name	= $_SESSION['pc_name'];
-		
-		include('connectDB.php');
-		include("dictionary.php");
 		
 		if(isset($_POST['DAFTAR']))
 		{
-			$STUD_ID	= mysql_real_escape_string($_POST['STUD_ID']);
-			$NAME		= mysql_real_escape_string($_POST['NAME']);
-			$IC_NUM		= mysql_real_escape_string($_POST['IC_NUM']);
-			$PROG		= mysql_real_escape_string($_POST['PROG']);
-			$SEM		= mysql_real_escape_string($_POST['SEM']);
-			$KOLEJ		= mysql_real_escape_string($_POST['KOLEJ']);
-			$ROOM		= mysql_real_escape_string($_POST['ROOM']);
+			[$F, $error] = read_student([$_POST['STUD_ID'] ?? '', $_POST['NAME'] ?? '', $_POST['IC_NUM'] ?? '', $_POST['PROG'] ?? '', $_POST['SEM'] ?? '', $_POST['KOLEJ'] ?? '', $_POST['ROOM'] ?? '']);
 			
-			$sql="INSERT INTO STUDENT (STUD_ID, NAME, IC_NUM, PROG, SEM, KOLEJ, ROOM) VALUES ($STUD_ID, \"$NAME\", $IC_NUM, \"$PROG\", \"$SEM\", \"$KOLEJ\", \"$ROOM\")";
-			
-			// execute query
-			$exe_sql = mysql_query($sql);
-			
-			// confirming the record is added
-			if ($exe_sql)
+			if($error !== null)
 			{
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Pendaftaran berjaya!\nPelajar telah didaftarkan ke dalam pangkalan data.");
-							</script>
-							<meta http-equiv="refresh" content="0; url=stud_details.php?ID=' . $STUD_ID . '"/>
-						</head>
-					</html>';
+				alert_page($error, null, true);
+			}
+			elseif(db_row("SELECT STUD_ID FROM STUDENT WHERE STUD_ID = ?", [$F['STUD_ID']]))
+			{
+				alert_page("Pendaftaran pelajar gagal! Nombor pelajar telah didaftarkan.", null, true);
+			}
+			elseif(db_query("INSERT INTO STUDENT (STUD_ID, NAME, IC_NUM, PROG, SEM, KOLEJ, ROOM) VALUES (?, ?, ?, ?, ?, ?, ?)", array_values($F)))
+			{
+				alert_page("Pendaftaran berjaya!\nPelajar telah didaftarkan ke dalam pangkalan data.", "stud_details.php?ID=" . $F['STUD_ID']);
 			}
 			else
 			{
-				echo "SQL insert statement failed.<br>" . mysql_error();
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Pendaftaran pelajar gagal!");
-								window.history.go(-1);
-							</script>
-						</head>
-					</html>';
+				alert_page("Pendaftaran pelajar gagal!", null, true);
 			}
 		}
-	?>
+	
+?>
     <title>PINCard</title>
 	
 	<link rel="apple-touch-icon" sizes="120x120" href="favicons/apple-touch-icon.png?v=kPgEkaXqbz">
@@ -121,7 +99,7 @@
 		  	<div class="sidebar content-box" style="display: block;">
                 <ul class="nav">
                     <!-- Main menu -->
-                    <?php include("nav.php"); ?>
+                    <?php include __DIR__ . '/nav.php'; ?>
                 </ul>
              </div>
 		  </div>
@@ -153,13 +131,12 @@
 										<option disabled selected> Sila pilih </option>
 										<option disabled> </option>
 										<?php
-										$sql_choose = "SELECT * FROM PROG ORDER BY PROG";
-										$result_choose = mysql_query($sql_choose);
-										while ($row = mysql_fetch_array($result_choose))
+										$result_choose = db_query("SELECT * FROM PROG ORDER BY PROG");
+										while ($row = mysqli_fetch_array($result_choose))
 										{
 											$ID_PROG	= $row["ID_PROG"];
 											$PROG		= $row["PROG"];
-											echo '<option value="' . $ID_PROG . '"> ' . $ID_PROG . ' - ' . $PROG . '</option>';
+											echo '<option value="' . e($ID_PROG) . '"> ' . e($ID_PROG) . ' - ' . e($PROG) . '</option>';
 										}
 										?>
 									</select>
@@ -174,13 +151,12 @@
 										<option disabled selected> Sila pilih </option>
 										<option disabled> </option>
 										<?php
-										$sql_choose = "SELECT * FROM KOLEJ ORDER BY KOLEJ";
-										$result_choose = mysql_query($sql_choose);
-										while ($row = mysql_fetch_array($result_choose))
+										$result_choose = db_query("SELECT * FROM KOLEJ ORDER BY KOLEJ");
+										while ($row = mysqli_fetch_array($result_choose))
 										{
 											$ID_KOLEJ	= $row["ID_KOLEJ"];
 											$KOLEJ		= $row["KOLEJ"];
-											echo '<option value="' . $ID_KOLEJ . '"> ' . $KOLEJ . '</option>';
+											echo '<option value="' . e($ID_KOLEJ) . '"> ' . e($KOLEJ) . '</option>';
 										}
 										?>
 									</select>

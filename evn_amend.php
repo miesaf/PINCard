@@ -1,75 +1,42 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
   <?php
 		session_start();
-		if(!$_SESSION['pc_login'] || $_SESSION['pc_priv'] != "BLCK")
-		{
-			header("Location: index.php?err=expired");
-			exit;
-		}
+		require_once __DIR__ . '/connectDB.php';
+		require_once __DIR__ . '/dictionary.php';
+		require_login('BLCK');
 		$name	= $_SESSION['pc_name'];
 		
-		include('connectDB.php');
-		include("dictionary.php");
-		
-		// Pinda Akaun
+		// Pinda Program
 		if(isset($_POST['evn_amend']))
 		{
-			$ID2		= mysql_real_escape_string($_POST['ID2']);
-			$EVN_NAME	= mysql_real_escape_string($_POST['EVN_NAME']);
-			$EVN_ORG	= mysql_real_escape_string($_POST['EVN_ORG']);
-			$EVN_TYPE	= mysql_real_escape_string($_POST['EVN_TYPE']);
-			$EVN_HOUR	= mysql_real_escape_string($_POST['EVN_HOUR']);
-			$EVN_VENUE	= mysql_real_escape_string($_POST['EVN_VENUE']);
-			$EVN_DATE	= mysql_real_escape_string($_POST['EVN_DATE']);
+			$ID2		= request_id($_POST, 'ID2');
+			[$F, $error] = read_event_form($_POST);
 			
-			if($EVN_HOUR > $HOUR_LIM)
+			if($ID2 === null || $error !== null)
 			{
-				echo "SQL insert statement failed.<br>" . mysql_error();
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Jam temu program melebihi had ' . $HOUR_LIM . ' jam!");
-								window.history.go(-1);
-							</script>
-						</head>
-					</html>';
+				alert_page($error ?? "Pindaan program gagal!", null, true);
 			}
 			else
 			{
-				$sql="UPDATE EVENT SET EVN_NAME = '$EVN_NAME', EVN_ORG = '$EVN_ORG', EVN_TYPE = '$EVN_TYPE', EVN_HOUR = $EVN_HOUR, EVN_VENUE = '$EVN_VENUE', EVN_DATE = '$EVN_DATE' WHERE EVN_ID = '$ID2'";
-			
-				// execute query
-				$exe_sql = mysql_query($sql);
+				$exe_sql = db_query("UPDATE EVENT SET EVN_NAME = ?, EVN_ORG = ?, EVN_TYPE = ?, EVN_HOUR = ?, EVN_VENUE = ?, EVN_DATE = ? WHERE EVN_ID = ?",
+					[$F['EVN_NAME'], $F['EVN_ORG'], $F['EVN_TYPE'], $F['EVN_HOUR'], $F['EVN_VENUE'], $F['EVN_DATE'], $ID2]);
 				
-				// confirming the record is added
+				// confirming the record is changed
 				if ($exe_sql)
 				{
-					echo '<html>
-							<head>
-								<script>
-									window.alert("Pindaan program berjaya!");
-								</script>
-								<meta http-equiv="refresh" content="0; url=evn_details.php?ID=' . $ID2 . '" />
-							</head>
-						</html>';
+					alert_page("Pindaan program berjaya!", "evn_details.php?ID=" . $ID2);
 				}
 				else
 				{
-					echo "SQL insert statement failed.<br>" . mysql_error();
-					echo '<html>
-							<head>
-								<script>
-									window.alert("Pindaan program gagal!");
-									window.history.go(-1);
-								</script>
-							</head>
-						</html>';
+					alert_page("Pindaan program gagal!", null, true);
 				}
 			}
 		}
-	?>
+	
+?>
     <title>PINCard</title>
 	
 	<link rel="apple-touch-icon" sizes="120x120" href="favicons/apple-touch-icon.png?v=kPgEkaXqbz">
@@ -137,7 +104,7 @@
 		  	<div class="sidebar content-box" style="display: block;">
                 <ul class="nav">
                     <!-- Main menu -->
-                    <?php include("nav.php"); ?>
+                    <?php include __DIR__ . '/nav.php'; ?>
                 </ul>
              </div>
 		  </div>
@@ -149,19 +116,14 @@
 					</div>
 					<div class="content-box-large box-with-header">
 					<?php
-						if(isset($_GET['AMD']))
+						$PINDA_ID	= request_id($_GET, 'AMD');
+						$row		= $PINDA_ID !== null ? db_row("SELECT * FROM EVENT WHERE EVN_ID = ?", [$PINDA_ID]) : null;
+						if(!$row)
 						{
-							$PINDA_ID	= $_GET['AMD'];
-							
-							// create the query
-							$sql = "SELECT * FROM EVENT WHERE EVN_ID = $PINDA_ID";
-							
-							// execute query
-							$result = mysql_query($sql) or die("SQL select statement failed");
-							
-							// iterate through all rows in result set
-							$row = mysql_fetch_array($result);
-							
+							echo "<center><i> Program tidak dijumpai </i></center>";
+						}
+						else
+						{
 							// extract specific fields
 							$EVN_NAME	= $row["EVN_NAME"];
 							$EVN_ORG	= $row["EVN_ORG"];
@@ -169,15 +131,14 @@
 							$EVN_HOUR	= $row["EVN_HOUR"];
 							$EVN_VENUE	= $row["EVN_VENUE"];
 							$EVN_DATE	= $row["EVN_DATE"];
-							$EVN_TYPE	= $row["EVN_TYPE"];
 					?>
 						<form id="evn_amend" action="evn_amend.php" method ="POST">
-							<input type="hidden" name="ID2" value="<?php echo $PINDA_ID; ?>">
+							<input type="hidden" name="ID2" value="<?php echo e($PINDA_ID); ?>">
 							<input type="hidden" name="evn_amend" value="YES">
 							<fieldset>
 								<div class="form-group">
 									<label>Nama Program</label>
-									<input class="form-control" placeholder="Sila isikan nama program dengan penuh" type="text" name="EVN_NAME" value="<?php echo $EVN_NAME; ?>">
+									<input class="form-control" placeholder="Sila isikan nama program dengan penuh" type="text" name="EVN_NAME" value="<?php echo e($EVN_NAME); ?>">
 								</div>
 								<div class="form-group">
 									<label>Organisasi Penganjur</label>
@@ -185,9 +146,8 @@
 										<option disabled> Sila pilih </option>
 										<option disabled> </option>
 										<?php
-										$sql_choose = "SELECT * FROM ORGANIZER ORDER BY ORG_NAME";
-										$result_choose = mysql_query($sql_choose);
-										while ($row = mysql_fetch_array($result_choose))
+										$result_choose = db_query("SELECT * FROM ORGANIZER ORDER BY ORG_NAME");
+										while ($row = mysqli_fetch_array($result_choose))
 										{
 											$ORG_ID		= $row["ORG_ID"];
 											$ORG_NAME	= $row["ORG_NAME"];
@@ -196,7 +156,7 @@
 											if($EVN_ORG == $ORG_ID)
 											{	$SEL_ORG = "selected";	}
 											
-											echo '<option value="' . $ORG_ID . '" ' . $SEL_ORG . '> ' . $ORG_NAME . ' (' . $ORG_ID . ')</option>';
+											echo '<option value="' . e($ORG_ID) . '" ' . e($SEL_ORG) . '> ' . e($ORG_NAME) . ' (' . e($ORG_ID) . ')</option>';
 										}
 										?>
 									</select>
@@ -215,15 +175,15 @@
 								</div>
 								<div class="form-group">
 									<label>Jam Temu Program</label>
-									<input class="form-control" type="number" name="EVN_HOUR" value="<?php echo $EVN_HOUR; ?>">
+									<input class="form-control" type="number" name="EVN_HOUR" value="<?php echo e($EVN_HOUR); ?>">
 								</div>
 								<div class="form-group">
 									<label>Lokasi Program Dianjurkan</label>
-									<input class="form-control" placeholder="Contoh: Dewan Karyawan 1" type="text" name="EVN_VENUE" value="<?php echo $EVN_VENUE; ?>">
+									<input class="form-control" placeholder="Contoh: Dewan Karyawan 1" type="text" name="EVN_VENUE" value="<?php echo e($EVN_VENUE); ?>">
 								</div>
 								<div class="form-group">
 									<label>Tarikh Program Berlansung</label>
-									<input class="form-control" type="date" name="EVN_DATE"  value="<?php echo $EVN_DATE; ?>">
+									<input class="form-control" type="date" name="EVN_DATE"  value="<?php echo e($EVN_DATE); ?>">
 								</div>
 							</fieldset>
 							<div>

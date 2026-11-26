@@ -1,86 +1,55 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
   <?php
 		session_start();
-		if(!$_SESSION['pc_login'] || $_SESSION['pc_priv'] == "BLUE")
-		{
-			header("Location: index.php?err=expired");
-			exit;
-		}
+		require_once __DIR__ . '/connectDB.php';
+		require_once __DIR__ . '/dictionary.php';
+		require_login('REDD', 'BLCK');
 		$name	= $_SESSION['pc_name'];
 		
-		include('connectDB.php');
-		include("dictionary.php");
-		
-		if(isset($_GET["SEL_COL"]))
-		{
-			$SEL_COL	= $_GET["SEL_COL"];
-			
-			if($SEL_COL == "all")
-			{
-				$sql	= "SELECT * FROM STUDENT ORDER BY NAME";
-			}
-			else
-			{
-				$sql	= "SELECT * FROM STUDENT WHERE KOLEJ = \"$SEL_COL\" ORDER BY NAME";
-			}
-			
-			$result = mysql_query($sql) or die("SQL select statement failed");
-		}
-		
-		// Padam Pelajar
+		// Padam Pelajar (a student who still has attendance records cannot be deleted)
 		if(isset($_POST['DEL_ID']))
 		{
-			// get ID value
-			$DEL_ID		= $_POST['DEL_ID'];
-			$SCOL_ID	= $_POST['DEL'];
+			$DEL_ID		= request_ids($_POST, 'DEL_ID');
+			$SCOL_ID	= request_text($_POST, 'DEL') ?? "all";
 			
-			$sql_del	= null;
-			
-			$I_DEL	= 0;
-			$I_MAX	= count($DEL_ID);
-			
-			while($I_DEL < $I_MAX)
+			$deleted = 0;
+			foreach($DEL_ID as $DEL_ID_S)
 			{
-				$DEL_ID_S	= mysql_real_escape_string($DEL_ID[$I_DEL]);
-				
-				$sql_del	= "DELETE FROM STUDENT WHERE STUD_ID = $DEL_ID_S;";
-				// delete the entry
-				$result = mysql_query("$sql_del"); 
-				
-				$I_DEL++;
+				if (db_query("DELETE FROM STUDENT WHERE STUD_ID = ?", [$DEL_ID_S]))
+				{
+					$deleted += mysqli_affected_rows($condb);
+				}
 			}
 			
-			// delete the entry
-			//$result = mysql_query("$sql_del"); 
-			
 			// check for deletion
-			if ($result)
+			if ($DEL_ID && $deleted === count($DEL_ID))
 			{
-			   echo '<html>
-						<head>
-							<script>
-								window.alert("Pelajar berjaya di padam!");
-							</script>
-							<meta http-equiv="refresh" content="0; url=list_stud.php?SEL_COL=' . $SCOL_ID . '" />
-						</head>
-					</html>';
+				alert_page("Pelajar berjaya di padam!", "list_stud.php?SEL_COL=" . urlencode($SCOL_ID));
 			}
 			else
 			{
-				//echo "SQL insert statement failed.<br>" . mysql_error();
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Kehadiran gagal di padam!");
-								window.history.go(-1);
-							</script>
-						</head>
-					</html>';
+				alert_page("Pelajar gagal di padam!", null, true);
 			}
 		}
-	?>
+		
+		$D_BC		= false;
+		$SEL_COL	= request_text($_GET, "SEL_COL");
+		if($SEL_COL !== null)
+		{
+			if($SEL_COL == "all")
+			{
+				$result = db_query("SELECT * FROM STUDENT ORDER BY NAME");
+			}
+			else
+			{
+				$result = db_query("SELECT * FROM STUDENT WHERE KOLEJ = ? ORDER BY NAME", [$SEL_COL]);
+			}
+		}
+	
+?>
     <title>PINCard</title>
 	
 	<link rel="apple-touch-icon" sizes="120x120" href="favicons/apple-touch-icon.png?v=kPgEkaXqbz">
@@ -148,7 +117,7 @@
 		  	<div class="sidebar content-box" style="display: block;">
                 <ul class="nav">
                     <!-- Main menu -->
-                    <?php include("nav.php"); ?>
+                    <?php include __DIR__ . '/nav.php'; ?>
                 </ul>
              </div>
 		  </div>
@@ -168,9 +137,9 @@
 											<?php
 											$SEL	= null;
 											$S_ALL	= null;
-											if(isset($_GET['SEL_COL']))
+											if($SEL_COL !== null)
 											{
-												$SEL	= $_GET['SEL_COL'];
+												$SEL	= $SEL_COL;
 												
 												if($SEL == "all")
 												{
@@ -178,23 +147,22 @@
 												}
 											}
 											?>
-											<option value="all" <?php print($S_ALL); ?>> Semua </option>
+											<option value="all" <?php echo e($S_ALL); ?>> Semua </option>
 											<option disabled> </option>
 											<?php
-											$sql_choose = "SELECT * FROM KOLEJ ORDER BY KOLEJ";
-											$result_choose = mysql_query($sql_choose);
-											while ($row = mysql_fetch_array($result_choose))
+											$result_choose = db_query("SELECT * FROM KOLEJ ORDER BY KOLEJ");
+											while ($row = mysqli_fetch_array($result_choose))
 											{
 												$ID_KOLEJ	= $row["ID_KOLEJ"];
 												$KOLEJ	= $row["KOLEJ"];
 												
 												if($SEL == $ID_KOLEJ)
 												{
-													echo '<option value="' . $ID_KOLEJ . '" selected> ' . $KOLEJ . ' (' . $ID_KOLEJ . ')</option>';
+													echo '<option value="' . e($ID_KOLEJ) . '" selected> ' . e($KOLEJ) . ' (' . e($ID_KOLEJ) . ')</option>';
 												}
 												else
 												{
-													echo '<option value="' . $ID_KOLEJ . '"> ' . $KOLEJ . ' (' . $ID_KOLEJ . ')</option>';
+													echo '<option value="' . e($ID_KOLEJ) . '"> ' . e($KOLEJ) . ' (' . e($ID_KOLEJ) . ')</option>';
 												}
 											}
 											?>
@@ -206,8 +174,8 @@
 						</form>
 						</table>
 						<br>
-						<form id="DEL_STD" action="list_stud.php?SEL_COL=<?php echo $SEL; ?>" method ="POST" onsubmit="return validate(this);">
-							<input type="hidden" name="DEL" value="<?php echo $SEL; ?>">
+						<form id="DEL_STD" action="list_stud.php?SEL_COL=<?php echo e(urlencode((string) $SEL)); ?>" method ="POST" onsubmit="return validate(this);">
+							<input type="hidden" name="DEL" value="<?php echo e($SEL); ?>">
 							<table class="table table-bordered table-hover table-striped">
 								<thead>
 									<td align="center">Padam</td>
@@ -224,16 +192,15 @@
 								<tbody>
 							<?php
 								// Papar table
-								if(isset($_GET['SEL_COL']))
+								if($SEL_COL !== null)
 								{            
 									// Initialise index number
 									$BIL = 0;
 									$D_BC	= false;
 									
 									// Display college name array
-									$sql_dcol		= "SELECT * FROM KOLEJ ORDER BY KOLEJ";
-									$result_dcol	= mysql_query($sql_dcol);
-									while($row_dcol	= mysql_fetch_array($result_dcol))
+									$result_dcol	= db_query("SELECT * FROM KOLEJ ORDER BY KOLEJ");
+									while($row_dcol	= mysqli_fetch_array($result_dcol))
 									{
 										$DID_COL		= $row_dcol["ID_KOLEJ"];
 										$DCOL2			= $row_dcol["KOLEJ"];
@@ -241,9 +208,8 @@
 									}
 									
 									// Display program name array
-									$sql_dprg		= "SELECT * FROM PROG ORDER BY ID_PROG";
-									$result_dprg	= mysql_query($sql_dprg);
-									while($row_dprg	= mysql_fetch_array($result_dprg))
+									$result_dprg	= db_query("SELECT * FROM PROG ORDER BY ID_PROG");
+									while($row_dprg	= mysqli_fetch_array($result_dprg))
 									{
 										$DID_PRG		= $row_dprg["ID_PROG"];
 										$DPRG2			= $row_dprg["PROG"];
@@ -251,7 +217,7 @@
 									}
 									
 									// iterate through all rows in result set
-									while ($row = mysql_fetch_array($result))
+									while ($row = mysqli_fetch_array($result))
 									{
 										$BIL++;
 										$D_BC	= true;
@@ -265,24 +231,23 @@
 										$STUD_ROOM	= $row['ROOM'];
 										
 										// Display subtitutes
-										$D_STUD_PROG	= $DPRG[$STUD_PROG];
-										$D_STUD_COL		= $DCOL[$STUD_COL];
+										$D_STUD_PROG	= $DPRG[$STUD_PROG] ?? '';
+										$D_STUD_COL		= $DCOL[$STUD_COL] ?? '';
 										
 										//Initialise
 										$T_CMERIT	= 0;
 										$T_CMARKS	= 0;
 										$T_CHOUR	= 0;
 										
-										$sql_att		= "SELECT ATTENDANCE.ATT_CAT, EVENT.EVN_TYPE, EVENT.EVN_HOUR FROM ATTENDANCE INNER JOIN EVENT ON ATTENDANCE.ATT_EVN = EVENT.EVN_ID WHERE ATTENDANCE.ATT_STUD = $STUD_ID";
-										$result_catt	= mysql_query($sql_att);
-										while($row_catt	= mysql_fetch_array($result_catt))
+										$result_catt	= db_query("SELECT ATTENDANCE.ATT_CAT, EVENT.EVN_TYPE, EVENT.EVN_HOUR FROM ATTENDANCE INNER JOIN EVENT ON ATTENDANCE.ATT_EVN = EVENT.EVN_ID WHERE ATTENDANCE.ATT_STUD = ?", [$STUD_ID]);
+										while($row_catt	= mysqli_fetch_array($result_catt))
 										{
 											$CATT_CAT	= $row_catt["ATT_CAT"];
 											$CATT_TYPE	= $row_catt["EVN_TYPE"];
 											$CATT_HOUR	= $row_catt["EVN_HOUR"];
 											
 											// Formulate
-											$CMERIT		= $ATT_CREDIT[$CATT_TYPE][$CATT_CAT];
+											$CMERIT		= att_credit($CATT_TYPE, $CATT_CAT);
 											$CMARKS		= $CMERIT * $CATT_HOUR;
 											
 											$T_CMERIT	+= $CMERIT;
@@ -292,18 +257,18 @@
 										
 										// output student information
 										echo "<tr>";
-										echo "<td align=\"center\"><input type=\"checkbox\" name=\"DEL_ID[]\" value=\"$STUD_ID\"></td>";
+										echo "<td align=\"center\"><input type=\"checkbox\" name=\"DEL_ID[]\" value=\"" . e($STUD_ID) . "\"></td>";
 										echo "<td align=center>$BIL</td>";
-										echo "<td align=center>$STUD_ID</td>";
+										echo "<td align=center>" . e($STUD_ID) . "</td>";
 										echo "<td>
-												<a target='_blank' href='stud_details.php?ID=$STUD_ID'>$STUD_NAME</a>
+												<a target='_blank' href='stud_details.php?ID=" . e($STUD_ID) . "'>" . e($STUD_NAME) . "</a>
 											</td>
-											<td align=\"center\">$STUD_PROG</td>
-											<td align=\"center\">$STUD_SEM</font></td>
-											<td align=\"center\">$D_STUD_COL ($STUD_ROOM)</font></td>
-											<td align=\"center\">$T_CMERIT</font></td>
-											<td align=\"center\">$T_CHOUR jam</font>
-											<td align=\"center\">$T_CMARKS</font></td>";
+											<td align=\"center\">" . e($STUD_PROG) . "</td>
+											<td align=\"center\">" . e($STUD_SEM) . "</td>
+											<td align=\"center\">" . e("$D_STUD_COL ($STUD_ROOM)") . "</td>
+											<td align=\"center\">$T_CMERIT</td>
+											<td align=\"center\">$T_CHOUR jam</td>
+											<td align=\"center\">$T_CMARKS</td>";
 										echo "</tr>";
 										
 									}
@@ -316,7 +281,7 @@
 									{
 										echo "<tr>
 												<td align='center' colspan=\"10\">
-													<a href='print_stud_list.php?SEL_COL=$SEL_COL' target=\"_blank\">
+													<a href='print_stud_list.php?SEL_COL=" . e(urlencode($SEL_COL)) . "' target=\"_blank\">
 														<button class='btn btn-outline btn-success' type='button' value='Cetak'>Cetak</button>
 													</a>
 												</td>
