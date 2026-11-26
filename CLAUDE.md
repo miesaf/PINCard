@@ -10,8 +10,8 @@ Kampus Segamat. Native PHP pages on Bootstrap Admin Theme 3 (Bootstrap 3), MySQL
 the owner's project archive (https://app.dimensikini.xyz/PINCard/). The repo is **public**.
 
 - History: written in 2017 with mysql_*, moved to mysqli on app.dimensikini.xyz (Aug 2020 / Feb 2021, PHP 7.4). Ported to
-  PHP 8.5 on 2026-11-26 (ClickUp `86d4e29q0`, under `86d4e29pu`). The folder alone runs on PHP 8.5 through its own
-  `.htaccess` (`SetHandler application/x-lsphp85`).
+  PHP 8.5 on 2026-11-26 (ClickUp `86d4e29q0`, under `86d4e29pu`). Its own `.htaccess` pins PHP 8.5
+  (`SetHandler application/x-lsphp85`); keep the pin even though the whole archive site defaults to PHP 8.5 since 2026-11-27.
 
 ## Data
 
@@ -51,6 +51,14 @@ PHP 8.5 with mysqli and a local MariaDB (the owner uses EnvKit). Import a dump, 
 and `php tools/hash-passwords.php`, add an admin with `tools/add-admin.php`, write `config.php`, then
 `php -d display_errors=1 -d error_reporting=-1 -S 127.0.0.1:8133 -t .`. The built-in server ignores `.htaccess`, so
 check the deny rules on the real host.
+
+## Status (2026-11-27)
+
+- Deployed on 2026-11-26 (PR #1, PHP 8.5.13). ClickUp `86d4e29q0` is complete.
+- The 10 Red/Black admin accounts whose passwords were in the public repo were locked with random hashes (owner's
+  OK). Open: the owner resets the ones still needed with `tools/add-admin.php`. Old passwords stay in git history.
+- The archive's root `.htaccess` (not in this repo) also refuses `..` requests and serves no `connectDB.php`, `config.json`,
+  `*.sql`, `*.log`, `*.md`, `error_log`, `LICENSE*` or composer/package files in any folder.
 
 ## Deploy
 
