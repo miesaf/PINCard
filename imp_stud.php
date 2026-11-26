@@ -1,103 +1,73 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
 <?php
 	session_start();
-	if(!$_SESSION['pc_login'] || $_SESSION['pc_priv'] == "BLUE")
-	{
-		header("Location: index.php?err=expired");
-		exit;
-	}
+	require_once __DIR__ . '/connectDB.php';
+	require_once __DIR__ . '/dictionary.php';
+	require_login('REDD', 'BLCK');
 	$name	= $_SESSION['pc_name'];
-	
-	include('connectDB.php');
-	include("dictionary.php");
 	
 	$D_BC	= false;
 	
 	if(isset($_POST["REG_STD"]))
-	{		
-		$STD_BER	=	$_SESSION["pc_ims_b"];
-		$STD_GAG	=	$_SESSION["pc_ims_g"];
+	{
+		// The rows checked on the previous step (kept in the session, not in the form):
+		// pc_ims_b = rows to register, pc_ims_g = rows refused then (duplicate or invalid).
+		$STD_BER	= $_SESSION["pc_ims_b"] ?? [];
+		$STD_GAG	= $_SESSION["pc_ims_g"] ?? [];
 		
-		unset($_SESSION["pc_ims_b"]);
-		unset($_SESSION["pc_ims_g"]);
+		unset($_SESSION["pc_ims_b"], $_SESSION["pc_ims_g"]);
 		
 		$VER_ID		= array();
 		$VER_STAT	= array();
 		
-		for($I_STD=0; $I_STD<count($STD_BER); $I_STD++)
+		if(!$STD_BER && !$STD_GAG)
 		{
-			$STD_IMP	= $STD_BER[$I_STD];
+			alert_page("Tiada data untuk didaftarkan. Sila muat naik fail semula.", "imp_stud.php");
+		}
+		
+		foreach($STD_BER as $STD_IMP)
+		{
+			[$F, $error]	= read_student($STD_IMP);
+			$VER_ID[]		= $STD_IMP;
 			
-			$sqlz="SELECT NAME FROM STUDENT WHERE STUD_ID = $STD_IMP[0]";
-			
-			// execute query
-			$exe_sqlz = mysqli_query($condb, $sqlz);
-			
-			if(mysqli_fetch_array($exe_sqlz))
+			if($error !== null)
 			{
-				array_push($VER_ID, $STD_BER[$I_STD]);
-				array_push($VER_STAT, "DUP");
+				$VER_STAT[]	= "GAG";
+			}
+			elseif(db_row("SELECT STUD_ID FROM STUDENT WHERE STUD_ID = ?", [$F['STUD_ID']]))
+			{
+				$VER_STAT[]	= "DUP";
+			}
+			elseif(db_query("INSERT INTO STUDENT (STUD_ID, NAME, IC_NUM, PROG, SEM, KOLEJ, ROOM) VALUES (?, ?, ?, ?, ?, ?, ?)", array_values($F)))
+			{
+				$VER_STAT[]	= "BER";
 			}
 			else
 			{
-				$sql="INSERT INTO STUDENT (STUD_ID, NAME, IC_NUM, PROG, SEM, KOLEJ, ROOM) VALUES ($STD_IMP[0], '$STD_IMP[1]', $STD_IMP[2], '$STD_IMP[3]', '$STD_IMP[4]', '$STD_IMP[5]', '$STD_IMP[6]')";
-				
-				// execute query
-				$exe_sql = mysqli_query($condb, $sql);
-				
-				if ($exe_sql)
-				{
-					array_push($VER_ID, $STD_BER[$I_STD]);
-					array_push($VER_STAT, "BER");
-				}
-				else
-				{
-					array_push($VER_ID, $STD_BER[$I_STD]);
-					array_push($VER_STAT, "GAG");
-				}
+				$VER_STAT[]	= "GAG";
 			}
 		}
 		
-		array_merge($VER_ID, $STD_GAG);
-		
-		for($G_STD=0; $G_STD<count($STD_GAG); $G_STD++)
+		foreach($STD_GAG as [$STD_IMP, $STAT])
 		{
-			array_push($VER_ID, $STD_GAG[$G_STD]);
-			array_push($VER_STAT, "GAG");
+			$VER_ID[]	= $STD_IMP;
+			$VER_STAT[]	= $STAT;
 		}
 		
-		$_SESSION["pc_rim_id"]		= $VER_ID;
-		$_SESSION["pc_rim_stat"]	= $VER_STAT;
-		
-		// confirming the record is added
-		if ((count($STD_BER) + count($STD_GAG)) == count($VER_ID))
+		if($VER_ID)
 		{
-			echo '<html>
-					<head>
-						<script>
-							window.alert("Jangan muat semula (refresh) halaman ini! Sila semak semula laporan pendaftaran berikut!");
-						</script>
-						<meta http-equiv="refresh" content="0; url=rpt_imp_stud.php"/>
-					</head>
-				</html>';
-		}
-		else
-		{
-			echo '<html>
-					<head>
-						<script>
-							window.alert("Jangan muat semula (refresh) halaman ini!\n\nRALAT: Sila semak semula laporan pendaftaran berikut!");
-						</script>
-						<meta http-equiv="refresh" content="0; url=rpt_imp_stud.php"/>
-					</head>
-				</html>';
+			$_SESSION["pc_rim_id"]		= $VER_ID;
+			$_SESSION["pc_rim_stat"]	= $VER_STAT;
+			
+			alert_page("Jangan muat semula (refresh) halaman ini! Sila semak semula laporan pendaftaran berikut!", "rpt_imp_stud.php");
 		}
 	}
 	
-	unset($_SESSION["pc_ims_b"]);
-	unset($_SESSION["pc_ims_g"]);
+	unset($_SESSION["pc_ims_b"], $_SESSION["pc_ims_g"]);
+
 ?>
     <title>PINCard</title>
 	
@@ -166,7 +136,7 @@
 		  	<div class="sidebar content-box" style="display: block;">
                 <ul class="nav">
                     <!-- Main menu -->
-<?php include("nav.php"); ?>
+<?php include __DIR__ . '/nav.php'; ?>
                 </ul>
              </div>
 		  </div>
@@ -214,64 +184,12 @@
 						<form id="reg_stud" action="imp_stud.php" method ="POST">
 							<input type="hidden" name="REG_STD" value="YES">
 <?php
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Jangan muat semula (refresh) halaman ni dan sila semak pengesahan maklumat pelajar sebelum daftar!.");
-							</script>
-						</head>
-					</html>';
-
-				$uploadOk = true;
-
-				$target_file = $_FILES["imfile"]["name"];
-				
-				$fileType = pathinfo($target_file,PATHINFO_EXTENSION);
-				
-				// Check file type
-				if(($fileType == "csv") || ($fileType == "CSV"))
-				{
-					$uploadOk = true;
-				}
-				else
-				{
-					$uploadOk = false;
-					
-					echo "<script type=\"text/javascript\">
-							alert(\"RALAT: Fail harus dalam format CSV!\");
-						</script>";
-				}
-				
-				// Check file size less than 500KB
-				if($_FILES["imfile"]["size"] > 500000)
-				{
-					$uploadOk = false;
-					
-					echo "<script type=\"text/javascript\">
-							alert(\"RALAT: Saiz fail melebihi 500KB!\");
-						</script>";
-				}
-				
-				// Check file size not empty
-				if($_FILES["imfile"]["size"] <= 0)
-				{
-					$uploadOk = false;
-					
-					echo "<script type=\"text/javascript\">
-							alert(\"RALAT: Saiz fail adalah sifar/tiada data!\");
-						</script>";
-				}
-				
 				// Proceed to read uploaded file
-				if($uploadOk)
+				if(($CSV_ROWS = read_csv_upload("imfile", ",")) !== null)
 				{
-					$filename=$_FILES["imfile"]["tmp_name"];
-					
-					$file = fopen($filename, "r");
+					alert_page("Jangan muat semula (refresh) halaman ni dan sila semak pengesahan maklumat pelajar sebelum daftar!.");
 					
 					$BIL_T	= 0;
-					$BIL_W	= 0;
-					$BIL_B	= 0;
 					
 					$PEL_B	= array();
 					$PEL_G	= array();
@@ -290,96 +208,64 @@
 								</thead>
 								<tbody>
 <?php
-					// Display organizer name array
-					$sql_dkol		= "SELECT * FROM KOLEJ";
-					$result_dkol	= mysqli_query($condb, $sql_dkol);
-					while($row_dkol	= mysqli_fetch_array($result_dkol))
-					{
-						$KOL1			= $row_dkol["ID_KOLEJ"];
-						$KOL2			= $row_dkol["KOLEJ"];
-						$D_KOLEJ[$KOL1]	= $KOL2;
-					}
+					// Display college and programme name arrays
+					$D_KOLEJ	= db_map("SELECT ID_KOLEJ, KOLEJ FROM KOLEJ");
+					$D_PROG		= db_map("SELECT ID_PROG, PROG FROM PROG");
 					
-					// Display organizer name array
-					$sql_dprog		= "SELECT * FROM PROG";
-					$result_dprog	= mysqli_query($condb, $sql_dprog);
-					while($row_dprog	= mysqli_fetch_array($result_dprog))
-					{
-						$PROG1			= $row_dprog["ID_PROG"];
-						$PROG2			= $row_dprog["PROG"];
-						$D_PROG[$PROG1]	= $PROG2;
-					}
-					
-					while (($getData = fgetcsv($file, 10000, ",")) !== FALSE)
+					foreach($CSV_ROWS as $getData)
 					{
 						$BIL_T++;
 						
-						$getData[0]	= mysqli_real_escape_string($condb, $getData[0]);
+						[$F, $error] = read_student($getData);
+						$getData	= array_values($F);
 						
-						$NO_PEL[]	= $getData[0];
-						
-						$check_sql	= "SELECT STUD_ID FROM STUDENT WHERE STUD_ID = $getData[0]";
-						
-						// execute query
-						$check_result = mysqli_query($condb, $check_sql) or die("SQL select statement failed");
-						
-						// iterate through all rows in result set
-						if($crow = mysqli_fetch_array($check_result))
+						if($error === null && db_row("SELECT STUD_ID FROM STUDENT WHERE STUD_ID = ?", [$F['STUD_ID']]))
 						{
-							$BIL_W++;
-							array_push($PEL_G, $getData);
+							$error		= "Duplikasi! Pelajar tidak akan didaftarkan.";
+							$PEL_G[]	= [$getData, "DUP"];
+						}
+						elseif($error !== null)
+						{
+							$error		.= " Pelajar tidak akan didaftarkan.";
+							$PEL_G[]	= [$getData, "GAG"];
+						}
+						
+						if($error !== null)
+						{
 ?>
 									<tr>
-										<td align="center"><font color="red"><b><i><?php echo $BIL_T; ?></i></b></font></td>
-										<td align="center"><font color="red"><b><i><?php echo $getData[0]; ?></i></b></font></td>
-										<td><font color="red"><b><i><?php echo $getData[1]; ?></i></b></font></td>
-										<td colspan="4"><font color="red"><b><i>Duplikasi! Pelajar tidak akan didaftarkan.</i></b></font></td>
+										<td align="center"><font color="red"><b><i><?php echo e($BIL_T); ?></i></b></font></td>
+										<td align="center"><font color="red"><b><i><?php echo e($F['STUD_ID']); ?></i></b></font></td>
+										<td><font color="red"><b><i><?php echo e($F['NAME']); ?></i></b></font></td>
+										<td colspan="4"><font color="red"><b><i><?php echo e($error); ?></i></b></font></td>
 									</tr>
 <?php
 						}
 						else
 						{
-							$BIL_B++;
-							array_push($PEL_B, $getData);
-							
-							// extract specific fields
-							$STUD_ID 	= $getData[0];
-							$NAME		= $getData[1];
-							$IC_NUM		= $getData[2];
-							$PROG		= $getData[3];
-							$SEM		= $getData[4];
-							$KOLEJ		= $getData[5];
-							$ROOM		= $getData[6];
+							$PEL_B[]	= $getData;
 ?>
 									<tr>
-										<td align="center"><?php echo $BIL_T; ?></td>
-										<td align="center"><?php echo $STUD_ID; ?></td>
-										<td><?php echo $NAME; ?></td>
-										<td align="center"><?php echo $IC_NUM; ?></td>
-										<td><?php echo "$PROG - $D_PROG[$PROG]"; ?></td>
-										<td align="center"><?php echo $SEM; ?></td>
-										<td><?php echo "$D_KOLEJ[$KOLEJ] ($ROOM)"; ?></td>
+										<td align="center"><?php echo e($BIL_T); ?></td>
+										<td align="center"><?php echo e($F['STUD_ID']); ?></td>
+										<td><?php echo e($F['NAME']); ?></td>
+										<td align="center"><?php echo e($F['IC_NUM']); ?></td>
+										<td><?php echo e($F['PROG'] . " - " . ($D_PROG[$F['PROG']] ?? '')); ?></td>
+										<td align="center"><?php echo e($F['SEM']); ?></td>
+										<td><?php echo e(($D_KOLEJ[$F['KOLEJ']] ?? '') . " (" . $F['ROOM'] . ")"); ?></td>
 									</tr>
 <?php
 						}
-						
 					}
-					
-					fclose($file);
 					
 					$_SESSION["pc_ims_b"] = $PEL_B;
 					$_SESSION["pc_ims_g"] = $PEL_G;
-
-				}
-				else
-				{
-					echo "<script type=\"text/javascript\">
-							window.history.go(-1);
-						</script>";
-				}
 ?>
 								</tbody>
 							</table>
+<?php
+				}
+?>
 						<div>
 							<button class="btn btn-primary" type="submit" form="reg_stud" value="Submit">Daftar Pelajar</button>
 						</div>

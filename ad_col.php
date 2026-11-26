@@ -1,132 +1,70 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
   <?php
 		session_start();
-		if(!$_SESSION['pc_login'] || $_SESSION['pc_priv'] != "BLCK")
-		{
-			header("Location: index.php?err=expired");
-			exit;
-		}
+		require_once __DIR__ . '/connectDB.php';
+		require_once __DIR__ . '/dictionary.php';
+		require_login('BLCK');
 		$name	= $_SESSION['pc_name'];
-		
-		include('connectDB.php');
-		include("dictionary.php");
 		
 		// Tambah kolej kediaman
 		if(isset($_POST['REG']))
-		{	
-			$ID_KOLEJ	= mysqli_real_escape_string($condb, $_POST['ID_KOLEJ']);
-			$KOLEJ		= mysqli_real_escape_string($condb, $_POST['KOLEJ']);
-
-			//SQL query command
-			$sql="INSERT INTO KOLEJ (ID_KOLEJ, KOLEJ) VALUES ('$ID_KOLEJ', '$KOLEJ')";
+		{
+			$ID_KOLEJ	= request_text($_POST, 'ID_KOLEJ') ?? '';
+			$KOLEJ	= request_text($_POST, 'KOLEJ') ?? '';
 			
-			// execute query
-			$exe_sql = mysqli_query($condb, $sql);
-			
-			// confirming the record is added
-			if ($exe_sql)
+			if($ID_KOLEJ === '' || $KOLEJ === '')
 			{
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Pendaftaran kolej kediaman berjaya!");
-							</script>
-							<meta http-equiv="refresh" content="0; url=ad_col.php" />
-						</head>
-					</html>';
+				alert_page("Sila lengkapkan kod dan nama!", null, true);
+			}
+			elseif(db_query("INSERT INTO KOLEJ (ID_KOLEJ, KOLEJ) VALUES (?, ?)", [$ID_KOLEJ, $KOLEJ]))
+			{
+				alert_page("Pendaftaran kolej kediaman berjaya!", "ad_col.php");
 			}
 			else
 			{
-				echo "SQL insert statement failed.<br>";
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Pendaftaran kolej kediaman gagal!");
-								window.history.go(-1);
-							</script>
-						</head>
-					</html>';
+				alert_page("Pendaftaran kolej kediaman gagal!", null, true);
 			}
 		}
 		
 		// Pinda kolej kediaman
 		if(isset($_POST['AMD_COL']))
 		{
-			$ID2		= mysqli_real_escape_string($condb, $_POST['ID2']);
-			$ID_KOLEJ	= mysqli_real_escape_string($condb, $_POST['ID_KOLEJ']);
-			$KOLEJ		= mysqli_real_escape_string($condb, $_POST['KOLEJ']);
-
-			$sql="UPDATE KOLEJ SET ID_KOLEJ = '$ID_KOLEJ', KOLEJ = '$KOLEJ' WHERE ID_KOLEJ = '$ID2'";
+			$ID2	= request_text($_POST, 'ID2') ?? '';
+			$ID_KOLEJ	= request_text($_POST, 'ID_KOLEJ') ?? '';
+			$KOLEJ	= request_text($_POST, 'KOLEJ') ?? '';
 			
-			// execute query
-			$exe_sql = mysqli_query($condb, $sql);
-			
-			// confirming the record is added
-			if ($exe_sql)
+			if($ID_KOLEJ === '' || $KOLEJ === '')
 			{
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Pindaan kolej kediaman berjaya!");
-							</script>
-							<meta http-equiv="refresh" content="0; url=ad_col.php" />
-						</head>
-					</html>';
+				alert_page("Sila lengkapkan kod dan nama!", null, true);
+			}
+			elseif(db_query("UPDATE KOLEJ SET ID_KOLEJ = ?, KOLEJ = ? WHERE ID_KOLEJ = ?", [$ID_KOLEJ, $KOLEJ, $ID2]))
+			{
+				alert_page("Pindaan kolej kediaman berjaya!", "ad_col.php");
 			}
 			else
 			{
-				echo "SQL insert statement failed.<br>";
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Pindaan kolej kediaman gagal!");
-								window.history.go(-1);
-							</script>
-						</head>
-					</html>';
+				alert_page("Pindaan kolej kediaman gagal!", null, true);
 			}
 		}
 		
-		// Padam kolej kediaman
-		if(isset($_GET['DEL']))
+		// Padam kolej kediaman (refused while students or events still use it)
+		$ID = request_text($_GET, 'DEL');
+		if($ID !== null)
 		{
-			// get ID value
-			$ID = mysqli_real_escape_string($condb, $_GET['DEL']);
-			
-			// delete the entry
-			$result = mysqli_query($condb, "DELETE FROM KOLEJ WHERE ID_KOLEJ = \"$ID\""); 
-			
-			// check for deletion
-			if ($result)
+			if (db_query("DELETE FROM KOLEJ WHERE ID_KOLEJ = ?", [$ID]) && mysqli_affected_rows($condb) === 1)
 			{
-			   echo '<html>
-						<head>
-							<script>
-								window.alert("Kolej kediaman berjaya di padam!");
-							</script>
-							<meta http-equiv="refresh" content="0; url=ad_col.php" />
-						</head>
-					</html>';
+				alert_page("Kolej kediaman berjaya di padam!", "ad_col.php");
 			}
 			else
 			{
-				//echo "SQL insert statement failed.<br>";
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Kolej kediaman gagal di padam!");
-								window.history.go(-1);
-							</script>
-						</head>
-					</html>';
+				alert_page("Kolej kediaman gagal di padam!", null, true);
 			}
 		}
 		
-		$sql	= "SELECT * FROM KOLEJ ORDER BY KOLEJ";
-		
-		$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
+		$result = db_query("SELECT * FROM KOLEJ ORDER BY KOLEJ");
 	?>
     <title>PINCard</title>
 	
@@ -195,7 +133,7 @@
 		  	<div class="sidebar content-box" style="display: block;">
                 <ul class="nav">
                     <!-- Main menu -->
-                    <?php include("nav.php"); ?>
+                    <?php include __DIR__ . '/nav.php'; ?>
                 </ul>
              </div>
 		  </div>
@@ -243,38 +181,40 @@
 					</div>
 					<div class="content-box-large box-with-header">
 <?php
-		$PINDA_ID	= $_GET['AMD'];
-		
-		// create the query
-		$sql = "SELECT * FROM KOLEJ WHERE ID_KOLEJ = \"$PINDA_ID\"";
-		
-		// execute query
-		$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
-		
-		// iterate through all rows in result set
-		$row = mysqli_fetch_array($result);
+		$PINDA_ID	= request_text($_GET, 'AMD') ?? '';
+		$row		= db_row("SELECT * FROM KOLEJ WHERE ID_KOLEJ = ?", [$PINDA_ID]);
 		
 		// extract specific fields
-		$ID_KOLEJ	= $row["ID_KOLEJ"];
-		$KOLEJ		= $row["KOLEJ"];
+		$ID_KOLEJ	= $row["ID_KOLEJ"] ?? "";
+		$KOLEJ	= $row["KOLEJ"] ?? "";
+		
+		if(!$row)
+		{
+			echo "<center><i> Kolej kediaman tidak dijumpai </i></center>";
+		}
+		else
+		{
 ?>
 						<form id="amd_col" action="ad_col.php" method ="POST">
-							<input type="hidden" name="ID2" value="<?php echo $PINDA_ID; ?>">
+							<input type="hidden" name="ID2" value="<?php echo e($PINDA_ID); ?>">
 							<input type="hidden" name="AMD_COL" value="YES">
 							<fieldset>
 								<div class="form-group">
 									<label>ID Kolej Kediaman</label>
-									<input class="form-control" type="text" name="ID_KOLEJ" value="<?php echo $ID_KOLEJ; ?>">
+									<input class="form-control" type="text" name="ID_KOLEJ" value="<?php echo e($ID_KOLEJ); ?>">
 								</div>
 								<div class="form-group">
 									<label>Nama Kolej Kediaman</label>
-									<input class="form-control" type="text" name="KOLEJ" value="<?php echo $KOLEJ; ?>">
+									<input class="form-control" type="text" name="KOLEJ" value="<?php echo e($KOLEJ); ?>">
 								</div>
 							</fieldset>
 							<div>
 								<button class="btn btn-primary" type="submit" form="amd_col" value="Submit">Pinda</button>
 							</div>
 						</form>
+<?php
+		}
+?>
 					</div>
 		  		</div>
 <?php
@@ -313,14 +253,14 @@
 								// output student information
 								echo "<tr>";
 								echo "<td align=center>$BIL</td>";
-								echo "<td align=center>$ID_KOLEJ</td>";
+								echo "<td align=center>" . e($ID_KOLEJ) . "</td>";
 								echo "
-									<td>$KOLEJ</td>
+									<td>" . e($KOLEJ) . "</td>
 									<td align=\"center\">
-										<a href='ad_col.php?AMD=$ID_KOLEJ'>
+										<a href='ad_col.php?AMD=" . e(urlencode($ID_KOLEJ)) . "'>
 											<button class='btn btn-outline btn-warning btn-sm' type='button' value='Pinda'>Pinda</button>
 										</a>
-										<button class='btn btn-outline btn-danger btn-sm' type='button' value='Padam' onClick='confirmDel(\"$ID_KOLEJ\")'>Padam</button>
+										<button class='btn btn-outline btn-danger btn-sm' type='button' value='Padam' onClick='confirmDel(" . e(js((string) $ID_KOLEJ)) . ")'>Padam</button>
 									</td>";
 								echo "</tr>";
 							}
@@ -364,7 +304,7 @@
 			var del = confirm("Adakah anda pasti untuk memadam kolej kediaman ini?");
 			if (del == true)
 			{
-				window.location.assign("ad_col.php?DEL=" + nums);
+				window.location.assign("ad_col.php?DEL=" + encodeURIComponent(nums));
 			} else 
 			{
 				alert("Kolej kediaman tidak di padam.");

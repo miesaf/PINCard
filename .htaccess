@@ -1,0 +1,11 @@
+# PINCard runs on PHP 8.5, whatever the PHP version of the rest of the site.
+<FilesMatch "\.php$">
+	SetHandler application/x-lsphp85
+</FilesMatch>
+
+Options -Indexes
+
+# Credentials, logs, SQL files, notes and design documents are never served.
+<FilesMatch "^(config(\.example)?\.php|connectDB\.php|dictionary\.php|nav\.php|error_log|.*\.sql|.*\.md|.*\.docx|LICENSE.*)$">
+	Require all denied
+</FilesMatch>

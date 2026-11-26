@@ -1,34 +1,28 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
   <?php
 		session_start();
-		if(!$_SESSION['pc_login'] || $_SESSION['pc_priv'] == "BLUE")
-		{
-			header("Location: index.php?err=expired");
-			exit;
-		}
+		require_once __DIR__ . '/connectDB.php';
+		require_once __DIR__ . '/dictionary.php';
+		require_login('REDD', 'BLCK');
 		$name	= $_SESSION['pc_name'];
 		
-		include('connectDB.php');
-		include("dictionary.php");
-		
-		if(isset($_GET["SEL_ORG"]))
+		$SEL_ORG	= request_text($_GET, "SEL_ORG");
+		if($SEL_ORG !== null)
 		{
-			$SEL_ORG	= $_GET["SEL_ORG"];
-			
 			if($SEL_ORG == "all")
 			{
-				$sql	= "SELECT * FROM EVENT ORDER BY EVN_DATE DESC";
+				$result = db_query("SELECT * FROM EVENT ORDER BY EVN_DATE DESC");
 			}
 			else
 			{
-				$sql	= "SELECT * FROM EVENT WHERE EVN_ORG = \"$SEL_ORG\" ORDER BY EVN_DATE DESC";
+				$result = db_query("SELECT * FROM EVENT WHERE EVN_ORG = ? ORDER BY EVN_DATE DESC", [$SEL_ORG]);
 			}
-			
-			$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 		}
-	?>
+	
+?>
     <title>PINCard</title>
 	
 	<link rel="apple-touch-icon" sizes="120x120" href="favicons/apple-touch-icon.png?v=kPgEkaXqbz">
@@ -96,7 +90,7 @@
 		  	<div class="sidebar content-box" style="display: block;">
                 <ul class="nav">
                     <!-- Main menu -->
-                    <?php include("nav.php"); ?>
+                    <?php include __DIR__ . '/nav.php'; ?>
                 </ul>
              </div>
 		  </div>
@@ -116,9 +110,9 @@
 											<?php
 											$SEL	= null;
 											$S_ALL	= null;
-											if(isset($_GET['SEL_ORG']))
+											if($SEL_ORG !== null)
 											{
-												$SEL	= $_GET['SEL_ORG'];
+												$SEL	= $SEL_ORG;
 												
 												if($SEL == "all")
 												{
@@ -126,11 +120,10 @@
 												}
 											}
 											?>
-											<option value="all" <?php print($S_ALL); ?>> Semua </option>
+											<option value="all" <?php echo e($S_ALL); ?>> Semua </option>
 											<option disabled> </option>
 											<?php
-											$sql_choose = "SELECT * FROM ORGANIZER ORDER BY ORG_NAME";
-											$result_choose = mysqli_query($condb, $sql_choose);
+											$result_choose = db_query("SELECT * FROM ORGANIZER ORDER BY ORG_NAME");
 											while ($row = mysqli_fetch_array($result_choose))
 											{
 												$ORG_ID		= $row["ORG_ID"];
@@ -138,11 +131,11 @@
 												
 												if($SEL == $ORG_ID)
 												{
-													echo '<option value="' . $ORG_ID . '" selected> ' . $ORG_NAME . ' (' . $ORG_ID . ')</option>';
+													echo '<option value="' . e($ORG_ID) . '" selected> ' . e($ORG_NAME) . ' (' . e($ORG_ID) . ')</option>';
 												}
 												else
 												{
-													echo '<option value="' . $ORG_ID . '"> ' . $ORG_NAME . ' (' . $ORG_ID . ')</option>';
+													echo '<option value="' . e($ORG_ID) . '"> ' . e($ORG_NAME) . ' (' . e($ORG_ID) . ')</option>';
 												}
 											}
 											?>
@@ -165,30 +158,19 @@
 							<tbody>
 						<?php
 							// Papar table
-                            if(isset($_GET['SEL_ORG']))
+                            if($SEL_ORG !== null)
                             {            
                                 // Initialise index number
                                 $BIL	= 0;
 								$D_BC	= false;
 								
 								// Display organizer name array
-                                $sql_dorg		= "SELECT * FROM ORGANIZER ORDER BY ORG_ID";
-                                $result_dorg	= mysqli_query($condb, $sql_dorg);
+                                $result_dorg	= db_query("SELECT * FROM ORGANIZER ORDER BY ORG_ID");
                                 while($row_dorg	= mysqli_fetch_array($result_dorg))
                                 {
                                     $DID_ORG		= $row_dorg["ORG_ID"];
                                     $DORG2			= $row_dorg["ORG_NAME"];
                                     $DORG[$DID_ORG]	= $DORG2;
-								}
-								
-								// Display registrar name array
-                                $sql_dadm		= "SELECT NO_ID, NAME FROM ADMIN ORDER BY NO_ID";
-                                $result_dadm	= mysqli_query($condb, $sql_dadm);
-                                while($row_dadm	= mysqli_fetch_array($result_dadm))
-                                {
-                                    $DID_ADM		= $row_dadm["NO_ID"];
-                                    $DADM2			= $row_dadm["NAME"];
-                                    $DADM[$DID_ADM]	= $DADM2;
 								}
 								
 								// iterate through all rows in result set
@@ -207,8 +189,7 @@
 									$EVN_RT		= $row['EVN_RT'];
                                     
                                     // Display subtitutes
-                                    $D_EVN_ORG	= $DORG[$EVN_ORG];
-                                    $D_EVN_RB	= $DADM[$EVN_RB];
+                                    $D_EVN_ORG	= $DORG[$EVN_ORG] ?? '';
                                     
 									// Date reformatting algorithm
 									$DATE_FORMAT	= strtotime($EVN_DATE);
@@ -218,11 +199,11 @@
                                     echo "<tr>";
                                     echo "<td align=center>$BIL</td>";
                                     echo "<td>
-											<a target='_blank' href='reg_attd_2.php?EVN=$EVN_ID'>$EVN_NAME</a>
+											<a target='_blank' href='reg_attd_2.php?EVN=" . e($EVN_ID) . "'>" . e($EVN_NAME) . "</a>
 										</td>
-										<td align=\"center\">$DDATE</td>
-										<td>$EVN_VENUE</td>
-										<td>$D_EVN_ORG</font></td>";
+										<td align=\"center\">" . e($DDATE) . "</td>
+										<td>" . e($EVN_VENUE) . "</td>
+										<td>" . e($D_EVN_ORG) . "</td>";
                                     echo "</tr>";
                                 }
 								

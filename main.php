@@ -1,17 +1,13 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
   <?php
 		session_start();
-		if(!$_SESSION['pc_login'])
-		{
-			header("Location: index.php?err=expired");
-			exit;
-		}
+		require_once __DIR__ . '/connectDB.php';
+		require_once __DIR__ . '/dictionary.php';
+		require_login();
 		$name	= $_SESSION['pc_name'];
-		
-		include('connectDB.php');
-		include("dictionary.php");
 	?>
     <title>PINCard</title>
 	
@@ -80,7 +76,7 @@
 		  	<div class="sidebar content-box" style="display: block;">
                 <ul class="nav">
                     <!-- Main menu -->
-                    <?php include("nav.php"); ?>
+                    <?php include __DIR__ . '/nav.php'; ?>
                 </ul>
              </div>
 		  </div>
@@ -90,33 +86,20 @@
 				<?php
 				if($_SESSION["pc_priv"] == "BLUE")
 				{
-					// create the query
-					$ID = $_SESSION['pc_ident'];
-					$sql = "SELECT * FROM STUDENT WHERE STUD_ID = $ID";
-
-					// execute query
-					$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
-
-					// iterate through all rows in result set
-					$row = mysqli_fetch_array($result);
+					$row = db_row("SELECT * FROM STUDENT WHERE STUD_ID = ?", [$_SESSION['pc_ident']]) ?? [];
 
 					// extract specific fields
-					$STUD_ID	= $row["STUD_ID"];
-					$NAME 		= $row["NAME"];
-					$NO_KP		= $row["IC_NUM"];
-					$PROG 		= $row["PROG"];
-					$SEM 		= $row["SEM"];
-					$COLLEGE 	= $row["KOLEJ"];
-					$BILIK	 	= $row["ROOM"];
-					
+					$STUD_ID	= $row["STUD_ID"] ?? "";
+					$NAME 		= $row["NAME"] ?? "";
+					$NO_KP		= $row["IC_NUM"] ?? "";
+					$PROG 		= $row["PROG"] ?? "";
+					$SEM 		= $row["SEM"] ?? "";
+					$COLLEGE 	= $row["KOLEJ"] ?? "";
+					$BILIK	 	= $row["ROOM"] ?? "";
+
 					// Decode codes into string
-					$sql_display = "SELECT PROG FROM PROG WHERE ID_PROG = '$PROG'";
-					$result_dispay = mysqli_query($condb, $sql_display);
-					while($row = mysqli_fetch_array($result_dispay)) { $DPROG = $row["PROG"]; }
-					
-					$sql_display2 = "SELECT KOLEJ FROM KOLEJ WHERE ID_KOLEJ = \"$COLLEGE\"";
-					$result_dispay2 = mysqli_query($condb, $sql_display2);
-					while($row2 = mysqli_fetch_array($result_dispay2)) { $DCOLLEGE = $row2["KOLEJ"]; }
+					$DPROG		= db_row("SELECT PROG FROM PROG WHERE ID_PROG = ?", [$PROG])["PROG"] ?? "";
+					$DCOLLEGE	= db_row("SELECT KOLEJ FROM KOLEJ WHERE ID_KOLEJ = ?", [$COLLEGE])["KOLEJ"] ?? "";
 					?>
 					<div class="content-box-header">
 						<div class="panel-title">Butiran Pelajar</div>
@@ -126,31 +109,31 @@
 							<tbody>
 							<tr>
 								<td>Nombor Pelajar</td>
-								<td><b><?php print($STUD_ID); ?></b></td>
+								<td><b><?php echo e($STUD_ID); ?></b></td>
 							</tr>
 							<tr>
 								<td>Nama Pelajar</td>
-								<td><b><?php print($NAME); ?></b></td>
+								<td><b><?php echo e($NAME); ?></b></td>
 							</tr>
 							<tr>
 								<td>No. K/P Pelajar</td>
-								<td><b><?php print($NO_KP); ?></b></td>
+								<td><b><?php echo e($NO_KP); ?></b></td>
 							</tr>
 							<tr>
 								<td>Program Pengajian</td>
-								<td><b><?php print($DPROG); ?></b></td>
+								<td><b><?php echo e($DPROG); ?></b></td>
 							</tr>
 							<tr>
 								<td>Semester Semasa</td>
-								<td><b><?php print($SEM); ?></b></td>
+								<td><b><?php echo e($SEM); ?></b></td>
 							</tr>
 							<tr>
 								<td>Kolej Kediaman</td>
-								<td><b><?php print($DCOLLEGE); ?></b></td>
+								<td><b><?php echo e($DCOLLEGE); ?></b></td>
 							</tr>
 							<tr>
 								<td>No. Bilik Semasa</td>
-								<td><b><?php print($BILIK); ?></b></td>
+								<td><b><?php echo e($BILIK); ?></b></td>
 							</tr>
 							</tbody>
 						</table>
@@ -160,20 +143,12 @@
 				
 				if($_SESSION["pc_priv"] != "BLUE")
 				{
-					// create the query
-					$ID = $_SESSION['pc_ident'];
-					$sql = "SELECT NO_ID, NAME, TYPE FROM ADMIN WHERE NO_ID = $ID";
-
-					// execute query
-					$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
-
-					// iterate through all rows in result set
-					$row = mysqli_fetch_array($result);
+					$row = db_row("SELECT NO_ID, NAME, TYPE FROM ADMIN WHERE NO_ID = ?", [$_SESSION['pc_ident']]) ?? [];
 
 					// extract specific fields
-					$NO_ID		= $row["NO_ID"];
-					$NAME 		= $row["NAME"];
-					$TYPE		= $row["TYPE"];
+					$NO_ID		= $row["NO_ID"] ?? "";
+					$NAME 		= $row["NAME"] ?? "";
+					$TYPE		= $row["TYPE"] ?? "";
 					?>
 					<div class="content-box-header">
 						<div class="panel-title">Butiran Akaun</div>
@@ -183,15 +158,15 @@
 							<tbody>
 							<tr>
 								<td>ID Akaun</td>
-								<td><b><?php print($NO_ID); ?></b></td>
+								<td><b><?php echo e($NO_ID); ?></b></td>
 							</tr>
 							<tr>
 								<td>Nama Pentadbir</td>
-								<td><b><?php print($NAME); ?></b></td>
+								<td><b><?php echo e($NAME); ?></b></td>
 							</tr>
 							<tr>
 								<td>Jenis Akaun</td>
-								<td><b><?php print($ACC_TYPE[$TYPE]); ?></b></td>
+								<td><b><?php echo e($ACC_TYPE[$TYPE] ?? $TYPE); ?></b></td>
 							</tr>
 							</tbody>
 						</table>

@@ -63,12 +63,65 @@
 	$ATT_CREDIT["MAND"][2]	= 5;
 	$ATT_CREDIT["MAND"][3]	= 5;
 	
-	// Merit Credit Formulae
-	//$ATT_CRDT	= $ATT_CREDIT["$EVN_TYPE"][$CHECK_CAT];
+	// Merit Credit Formulae: the credit for an event level and an involvement category (0 if unknown)
+	function att_credit($evn_type, $att_cat): int
+	{
+		global $ATT_CREDIT;
+		return $ATT_CREDIT[(string) $evn_type][(int) $att_cat] ?? 0;
+	}
 	
 	// Event hour credit limit
 	$HOUR_LIM	= 42;
+
+	// Reads the event form (evn_reg.php, evn_amend.php): [fields, error message or null].
+	function read_event_form(array $post): array
+	{
+		global $DEVN_TYPE, $HOUR_LIM;
+		$f = [
+			'EVN_NAME'	=> request_text($post, 'EVN_NAME') ?? '',
+			'EVN_ORG'	=> request_text($post, 'EVN_ORG') ?? '',
+			'EVN_TYPE'	=> request_text($post, 'EVN_TYPE') ?? '',
+			'EVN_HOUR'	=> filter_var($post['EVN_HOUR'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]),
+			'EVN_VENUE'	=> request_text($post, 'EVN_VENUE') ?? '',
+			'EVN_DATE'	=> request_text($post, 'EVN_DATE') ?? '',
+		];
+		$date = DateTime::createFromFormat('!Y-m-d', $f['EVN_DATE']);
+		if ($f['EVN_NAME'] === '' || $f['EVN_ORG'] === '' || !isset($DEVN_TYPE[$f['EVN_TYPE']])
+			|| $f['EVN_HOUR'] === false || !$date || $date->format('Y-m-d') !== $f['EVN_DATE'])
+		{
+			return [$f, "Sila lengkapkan nama, penganjur, tahap, jam temu dan tarikh program!"];
+		}
+		if ($f['EVN_HOUR'] > $HOUR_LIM)
+		{
+			return [$f, "Jam temu program melebihi had " . $HOUR_LIM . " jam!"];
+		}
+		return [$f, null];
+	}
 	
+	// Checks a student's details (reg_stud.php, imp_stud.php), given in the order
+	// STUD_ID, NAME, IC_NUM, PROG, SEM, KOLEJ, ROOM: [fields, error message or null].
+	function read_student(array $values): array
+	{
+		$values = array_pad(array_values($values), 7, '');
+		$f = array_combine(['STUD_ID', 'NAME', 'IC_NUM', 'PROG', 'SEM', 'KOLEJ', 'ROOM'],
+			array_map(fn($value) => is_string($value) ? trim($value) : '', array_slice($values, 0, 7)));
+		$f['IC_NUM'] = str_replace(['-', ' '], '', $f['IC_NUM']);	// IC number without dashes
+
+		if (!ctype_digit($f['STUD_ID']) || strlen($f['STUD_ID']) > 10 || (int) $f['STUD_ID'] > 2147483647 || (int) $f['STUD_ID'] === 0)
+		{
+			return [$f, "Nombor pelajar tidak sah!"];
+		}
+		if ($f['NAME'] === '' || !ctype_digit($f['IC_NUM']) || strlen($f['IC_NUM']) > 12)
+		{
+			return [$f, "Nama atau nombor kad pengenalan tidak sah!"];
+		}
+		if (!db_row("SELECT ID_PROG FROM PROG WHERE ID_PROG = ?", [$f['PROG']]) || !db_row("SELECT ID_KOLEJ FROM KOLEJ WHERE ID_KOLEJ = ?", [$f['KOLEJ']]))
+		{
+			return [$f, "Kod program pengajian atau kolej kediaman tidak wujud!"];
+		}
+		return [$f, null];
+	}
+
 	// Daftar Kehadiran Pukal
 	$D_STAT["DUP"]	= "<font color=\"#ff9900\"><b>Duplikasi pendaftaran! Kehadiran tidak didaftarkan.</b></font>";
 	$D_STAT["BER"]	= "<font color=\"#2eb82e\"><b>Pendaftaran berjaya!</b></font>";

@@ -1,22 +1,18 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
 <?php
 	session_start();
-	if(!$_SESSION['pc_login'] || $_SESSION['pc_priv'] != "BLCK")
-	{
-		header("Location: index.php?err=expired");
-		exit;
-	}
+	require_once __DIR__ . '/connectDB.php';
+	require_once __DIR__ . '/dictionary.php';
+	require_login('REDD', 'BLCK');
 	$name	= $_SESSION['pc_name'];
-	
-	include('connectDB.php');
-	include("dictionary.php");
 	
 	$D_BC	= false;
 	
-	$RPT_ID		= $_SESSION["pc_rim_id"];
-	$RPT_STAT	= $_SESSION["pc_rim_stat"];
+	$RPT_ID		= $_SESSION["pc_rim_id"] ?? [];
+	$RPT_STAT	= $_SESSION["pc_rim_stat"] ?? [];
 	
 	unset($_SESSION["pc_rim_id"]);
 	unset($_SESSION["pc_rim_stat"]);
@@ -88,7 +84,7 @@
 		  	<div class="sidebar content-box" style="display: block;">
                 <ul class="nav">
                     <!-- Main menu -->
-<?php include("nav.php"); ?>
+<?php include __DIR__ . '/nav.php'; ?>
                 </ul>
              </div>
 		  </div>
@@ -114,54 +110,23 @@
 							</thead>
 							<tbody>
 <?php
-						// Display organizer name array
-						$sql_dkol		= "SELECT * FROM KOLEJ";
-						$result_dkol	= mysqli_query($condb, $sql_dkol);
-						while($row_dkol	= mysqli_fetch_array($result_dkol))
-						{
-							$KOL1			= $row_dkol["ID_KOLEJ"];
-							$KOL2			= $row_dkol["KOLEJ"];
-							$D_KOLEJ[$KOL1]	= $KOL2;
-						}
-						
-						// Display organizer name array
-						$sql_dprog		= "SELECT * FROM PROG";
-						$result_dprog	= mysqli_query($condb, $sql_dprog);
-						while($row_dprog	= mysqli_fetch_array($result_dprog))
-						{
-							$PROG1			= $row_dprog["ID_PROG"];
-							$PROG2			= $row_dprog["PROG"];
-							$D_PROG[$PROG1]	= $PROG2;
-						}
+						// Display college and programme name arrays
+						$D_KOLEJ	= db_map("SELECT ID_KOLEJ, KOLEJ FROM KOLEJ");
+						$D_PROG		= db_map("SELECT ID_PROG, PROG FROM PROG");
 						
 						$BIL_T	= 0;
 						
-						for($I_STD=0; $I_STD<count($RPT_ID); $I_STD++)
+						foreach($RPT_ID as $I_STD => $S_ID)
 						{
 							$BIL_T++;
 							
-							$S_ID 	= $RPT_ID[$I_STD];
-							$STAT	= $RPT_STAT[$I_STD];
+							$STAT	= $RPT_STAT[$I_STD] ?? "GAG";
 							
-							$STUD_ID 	= $S_ID[0];
-							$NAME		= $S_ID[1];
-							$IC_NUM		= $S_ID[2];
-							$PROG		= $S_ID[3];
-							$SEM		= $S_ID[4];
-							$KOLEJ		= $S_ID[5];
-							$ROOM		= $S_ID[6];
+							[$STUD_ID, $NAME, $IC_NUM, $PROG, $SEM, $KOLEJ, $ROOM] = array_pad(is_array($S_ID) ? array_values($S_ID) : [], 7, '');
 							
-							$check_sql	= "SELECT * FROM STUDENT WHERE STUD_ID = $STUD_ID";
-							
-							// execute query
-							$check_result = mysqli_query($condb, $check_sql) or die("SQL select statement failed");
-							
-							// iterate through all rows in result set
-							if($STAT == "BER")
+							// A registered student is shown as saved in the database
+							if($STAT == "BER" && ($crow = db_row("SELECT * FROM STUDENT WHERE STUD_ID = ?", [$STUD_ID])))
 							{
-								$crow = mysqli_fetch_array($check_result);
-								
-								// extract specific fields
 								$NAME		= $crow["NAME"];
 								$IC_NUM		= $crow["IC_NUM"];
 								$PROG		= $crow["PROG"];
@@ -170,14 +135,14 @@
 								$ROOM		= $crow["ROOM"];
 ?>
 								<tr>
-									<td align="center"><?php echo $BIL_T; ?></td>
-									<td align="center"><?php echo $STUD_ID; ?></td>
-									<td><?php echo $NAME; ?></td>
-									<td align="center"><?php echo $IC_NUM; ?></td>
-									<td><?php echo "$PROG - $D_PROG[$PROG]"; ?></td>
-									<td align="center"><?php echo $SEM; ?></td>
-									<td><?php echo "$D_KOLEJ[$KOLEJ]<br>($ROOM)"; ?></td>
-									<td><?php echo $IMP_STAT[$STAT]; ?></td>
+									<td align="center"><?php echo e($BIL_T); ?></td>
+									<td align="center"><?php echo e($STUD_ID); ?></td>
+									<td><?php echo e($NAME); ?></td>
+									<td align="center"><?php echo e($IC_NUM); ?></td>
+									<td><?php echo e($PROG . " - " . ($D_PROG[$PROG] ?? '')); ?></td>
+									<td align="center"><?php echo e($SEM); ?></td>
+									<td><?php echo e($D_KOLEJ[$KOLEJ] ?? ''); ?><br>(<?php echo e($ROOM); ?>)</td>
+									<td><?php echo $IMP_STAT[$STAT] ?? ''; ?></td>
 								</tr>
 <?php
 							}
@@ -185,18 +150,17 @@
 							{
 ?>
 								<tr>
-									<td align="center"><font color="red"><?php echo $BIL_T; ?></font></td>
-									<td align="center"><font color="red"><?php echo $STUD_ID; ?></font></td>
-									<td><font color="red"><?php echo $NAME; ?></font></td>
-									<td align="center"><font color="red"><?php echo $IC_NUM; ?></font></td>
-									<td><font color="red"><?php echo "$PROG - $D_PROG[$PROG]"; ?></font></td>
-									<td align="center"><font color="red"><?php echo $SEM; ?></font></td>
-									<td><font color="red"><?php echo "$D_KOLEJ[$KOLEJ]<br>($ROOM)"; ?></td>
-									<td><?php echo $IMP_STAT[$STAT]; ?></td>
+									<td align="center"><font color="red"><?php echo e($BIL_T); ?></font></td>
+									<td align="center"><font color="red"><?php echo e($STUD_ID); ?></font></td>
+									<td><font color="red"><?php echo e($NAME); ?></font></td>
+									<td align="center"><font color="red"><?php echo e($IC_NUM); ?></font></td>
+									<td><font color="red"><?php echo e($PROG . " - " . ($D_PROG[$PROG] ?? '')); ?></font></td>
+									<td align="center"><font color="red"><?php echo e($SEM); ?></font></td>
+									<td><font color="red"><?php echo e($D_KOLEJ[$KOLEJ] ?? ''); ?><br>(<?php echo e($ROOM); ?>)</font></td>
+									<td><?php echo $IMP_STAT[$STAT] ?? ''; ?></td>
 								</tr>
 <?php
 							}
-							
 						}							
 ?>
 							</tbody>

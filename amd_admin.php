@@ -1,80 +1,66 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
   <?php
 		session_start();
-		if(!$_SESSION['pc_login'] || $_SESSION['pc_priv'] != "BLCK")
-		{
-			header("Location: index.php?err=expired");
-			exit;
-		}
+		require_once __DIR__ . '/connectDB.php';
+		require_once __DIR__ . '/dictionary.php';
+		require_login('BLCK');
 		$name	= $_SESSION['pc_name'];
-		
-		include('connectDB.php');
-		include("dictionary.php");
 		
 		// Pinda Akaun
 		if(isset($_POST['AMD_ACC']))
 		{
-			$ID2		= mysqli_real_escape_string($condb, $_POST['ID2']);
-			$NO_ID		= mysqli_real_escape_string($condb, $_POST['NO_ID']);
-			$NAME		= mysqli_real_escape_string($condb, $_POST['NAME']);
-			$KL1		= mysqli_real_escape_string($condb, $_POST['KL1']);
-			$KL2		= mysqli_real_escape_string($condb, $_POST['KL2']);
-			$TYPE		= mysqli_real_escape_string($condb, $_POST['TYPE']);
+			$ID2		= request_id($_POST, 'ID2');
+			$NO_ID		= request_id($_POST, 'NO_ID');
+			$NAME		= request_text($_POST, 'NAME') ?? '';
+			$KL1		= (string) (is_string($_POST['KL1'] ?? null) ? $_POST['KL1'] : '');
+			$KL2		= (string) (is_string($_POST['KL2'] ?? null) ? $_POST['KL2'] : '');
+			$TYPE		= request_text($_POST, 'TYPE') ?? '';
 			
-			if($KL1 == "my_old_password")
+			// "my_old_password" (the form's placeholder value) or an empty field keeps the password.
+			$KEEP_PW	= ($KL1 === "my_old_password" || $KL1 === "") && ($KL2 === "my_old_password" || $KL2 === "");
+			
+			if($ID2 === null || $NO_ID === null || $NAME === '' || !in_array($TYPE, ["REDD", "BLCK"], true))
 			{
-				$sql="UPDATE ADMIN SET NO_ID = $NO_ID, NAME = '$NAME', TYPE = '$TYPE' WHERE NO_ID = '$ID2'";
+				alert_page("Sila lengkapkan nombor pekerja, nama dan jenis akaun!", null, true);
+			}
+			elseif(!$KEEP_PW && !hash_equals($KL1, $KL2))
+			{
+				alert_page("Kata laluan tidak sepadan!", null, true);
 			}
 			else
 			{
-				if($KL1 == $KL2)
+				if($KEEP_PW)
 				{
-					$sql="UPDATE ADMIN SET NO_ID = $NO_ID, NAME = '$NAME', PWORD = '$KL1', TYPE = '$TYPE' WHERE NO_ID = '$ID2'";
-					
-					// execute query
-					$exe_sql = mysqli_query($condb, $sql);
-					
-					// confirming the record is added
-					if ($exe_sql)
-					{
-						echo '<html>
-								<head>
-									<script>
-										window.alert("Pindaan akaun pentadbir berjaya!");
-									</script>
-									<meta http-equiv="refresh" content="0; url=list_admin.php" />
-								</head>
-							</html>';
-					}
-					else
-					{
-						echo "SQL insert statement failed.<br>";
-						echo '<html>
-								<head>
-									<script>
-										window.alert("Pindaan akaun pentadbir gagal!");
-										window.history.go(-1);
-									</script>
-								</head>
-							</html>';
-					}
+					$exe_sql = db_query("UPDATE ADMIN SET NO_ID = ?, NAME = ?, TYPE = ? WHERE NO_ID = ?", [$NO_ID, $NAME, $TYPE, $ID2]);
 				}
 				else
 				{
-					echo '<html>
-								<head>
-									<script>
-										window.alert("Kata laluan tidak sepadan!");
-										window.history.go(-1);
-									</script>
-								</head>
-							</html>';
+					$exe_sql = db_query("UPDATE ADMIN SET NO_ID = ?, NAME = ?, PWORD = ?, TYPE = ? WHERE NO_ID = ?", [$NO_ID, $NAME, password_hash($KL1, PASSWORD_DEFAULT), $TYPE, $ID2]);
+				}
+				
+				// confirming the record is changed
+				if ($exe_sql)
+				{
+					// Your own account: the session follows a new number, name or type.
+					if($ID2 === (int) $_SESSION['pc_ident'])
+					{
+						$_SESSION['pc_ident']	= (string) $NO_ID;
+						$_SESSION['pc_name']	= $NAME;
+						$_SESSION['pc_priv']	= $TYPE;
+					}
+					alert_page("Pindaan akaun pentadbir berjaya!", "list_admin.php");
+				}
+				else
+				{
+					alert_page("Pindaan akaun pentadbir gagal!", null, true);
 				}
 			}
 		}
-	?>
+	
+?>
     <title>PINCard</title>
 	
 	<link rel="apple-touch-icon" sizes="120x120" href="favicons/apple-touch-icon.png?v=kPgEkaXqbz">
@@ -142,7 +128,7 @@
 		  	<div class="sidebar content-box" style="display: block;">
                 <ul class="nav">
                     <!-- Main menu -->
-                    <?php include("nav.php"); ?>
+                    <?php include __DIR__ . '/nav.php'; ?>
                 </ul>
              </div>
 		  </div>
@@ -154,35 +140,30 @@
 					</div>
 					<div class="content-box-large box-with-header">
 					<?php
-						if(isset($_GET['AMD']))
+						$PINDA_ID	= request_id($_GET, 'AMD');
+						$row		= $PINDA_ID !== null ? db_row("SELECT * FROM ADMIN WHERE NO_ID = ?", [$PINDA_ID]) : null;
+						if(!$row)
 						{
-							$PINDA_ID	= $_GET['AMD'];
-							
-							// create the query
-							$sql = "SELECT * FROM ADMIN WHERE NO_ID = $PINDA_ID";
-							
-							// execute query
-							$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
-							
-							// iterate through all rows in result set
-							$row = mysqli_fetch_array($result);
-							
+							echo "<center><i> Akaun tidak dijumpai </i></center>";
+						}
+						else
+						{
 							// extract specific fields
 							$NO_ID		= $row["NO_ID"];
 							$NAME		= $row["NAME"];
 							$TYPE		= $row["TYPE"];
 					?>
 						<form id="amd_admin" action="amd_admin.php" method ="POST">
-							<input type="hidden" name="ID2" value="<?php echo $PINDA_ID; ?>">
+							<input type="hidden" name="ID2" value="<?php echo e($PINDA_ID); ?>">
 							<input type="hidden" name="AMD_ACC" value="YES">
 							<fieldset>
 								<div class="form-group">
 									<label>Nombor Pekerja</label>
-									<input class="form-control" type="text" name="NO_ID" value="<?php echo $NO_ID; ?>">
+									<input class="form-control" type="text" name="NO_ID" value="<?php echo e($NO_ID); ?>">
 								</div>
 								<div class="form-group">
 									<label>Nama Penuh Pentadbir</label>
-									<input class="form-control" placeholder="Sila isikan nama pentadbir dengan penuh" type="text" name="NAME" value="<?php echo $NAME; ?>">
+									<input class="form-control" placeholder="Sila isikan nama pentadbir dengan penuh" type="text" name="NAME" value="<?php echo e($NAME); ?>">
 								</div>
 								<div class="form-group">
 									<label>Kata Laluan</label>

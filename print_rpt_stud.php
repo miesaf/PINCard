@@ -1,17 +1,13 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
   <?php
 		session_start();
-		if(!$_SESSION['pc_login'])
-		{
-			header("Location: index.php?err=expired");
-			exit;
-		}
+		require_once __DIR__ . '/connectDB.php';
+		require_once __DIR__ . '/dictionary.php';
+		require_login();
 		$name	= $_SESSION['pc_name'];
-		
-		include('connectDB.php');
-		include("dictionary.php");
 	?>
     <title>PINCard</title>
 	
@@ -81,24 +77,22 @@
   <body onload="window.print()">
 	<table border="1" class="utama">
 		<?php
+		// A student sees only their own report.
 		if($_SESSION["pc_priv"] == "BLUE")
 		{
-			$ID	= $_SESSION["pc_ident"];
+			$ID	= (int) $_SESSION["pc_ident"];
 		}
 		else
 		{
-			$ID		= $_GET['ID'];
+			$ID	= request_id($_GET, 'ID');
 		}
 		
-		$D_STD	= false;
 		$D_BC	= false;
 		
-		$sql_display1	= "SELECT * FROM STUDENT WHERE STUD_ID = $ID";
-		$result_dispay1	= mysqli_query($condb, $sql_display1);
-		if($row1 = mysqli_fetch_array($result_dispay1))
+		$row1	= $ID !== null ? db_row("SELECT * FROM STUDENT WHERE STUD_ID = ?", [$ID]) : null;
+		
+		if($row1)
 		{
-			$D_STD		= true;
-			
 			$STD_ID		= $row1["STUD_ID"];
 			$STD_NAME	= $row1["NAME"];
 			$STD_IC		= $row1["IC_NUM"];
@@ -106,17 +100,9 @@
 			$STD_SEM	= $row1["SEM"];
 			$STD_COL	= $row1["KOLEJ"];
 			$STD_ROOM	= $row1["ROOM"];
-		}
-		
-		if($D_STD == true)
-		{
-			$sql_display2 = "SELECT PROG FROM PROG WHERE ID_PROG = \"$STD_PROG\"";
-			$result_dispay2 = mysqli_query($condb, $sql_display2);
-			while($row2 = mysqli_fetch_array($result_dispay2)) { $D_STD_PROG = $row2["PROG"]; }
 			
-			$sql_display3 = "SELECT KOLEJ FROM KOLEJ WHERE ID_KOLEJ = \"$STD_COL\"";
-			$result_dispay3 = mysqli_query($condb, $sql_display3);
-			while($row3 = mysqli_fetch_array($result_dispay3)) { $D_STD_COL = $row3["KOLEJ"]; }
+			$D_STD_PROG	= db_row("SELECT PROG FROM PROG WHERE ID_PROG = ?", [$STD_PROG])["PROG"] ?? "";
+			$D_STD_COL	= db_row("SELECT KOLEJ FROM KOLEJ WHERE ID_KOLEJ = ?", [$STD_COL])["KOLEJ"] ?? "";
 			
 			echo "<thead>
 					<tr class=\"butir-tajuk\">
@@ -127,31 +113,31 @@
 							</tr>
 							<tr>
 								<td>Nombor Pelajar</td>
-								<td class=\"but-right\">: $STD_ID</td>
+								<td class=\"but-right\">: " . e($STD_ID) . "</td>
 							</tr>
 							<tr>
 								<td>Nama</td>
-								<td class=\"but-right\">: $STD_NAME</td>
+								<td class=\"but-right\">: " . e($STD_NAME) . "</td>
 							</tr>
 							<tr>
 								<td>Nombor K/P</td>
-								<td class=\"but-right\">: $STD_IC</td>
+								<td class=\"but-right\">: " . e($STD_IC) . "</td>
 							</tr>
 							<tr>
 								<td>Program Pengajian &nbsp;&nbsp;</td>
-								<td class=\"but-right\">: $D_STD_PROG</td>
+								<td class=\"but-right\">: " . e($D_STD_PROG) . "</td>
 							</tr>
 							<tr>
 								<td>Sem</td>
-								<td class=\"but-right\">: $STD_SEM</td>
+								<td class=\"but-right\">: " . e($STD_SEM) . "</td>
 							</tr>
 							<tr>
 								<td>Kolej Kediaman</td>
-								<td class=\"but-right\">: $D_STD_COL</td>
+								<td class=\"but-right\">: " . e($D_STD_COL) . "</td>
 							</tr>
 							<tr>
 								<td>Nombor Bilik</td>
-								<td class=\"but-right\">: $STD_ROOM</td>
+								<td class=\"but-right\">: " . e($STD_ROOM) . "</td>
 							</tr>
 						</table>
 						</td>
@@ -166,19 +152,14 @@
 					</tr>
 				</thead>
 				<tbody class=\"uppercase\">";
-				
+			
 			// Initialise index number
 			$BIL		= 0;
 			$MERIT		= 0;
 			$T_HOUR		= 0;
-			$MARKS		= 0;
 			$T_MARKS	= 0;
 			
-			// create the query
-			$sql	= "SELECT * FROM ATTENDANCE LEFT JOIN EVENT ON ATTENDANCE.ATT_EVN = EVENT.EVN_ID WHERE ATTENDANCE.ATT_STUD = $STD_ID ORDER BY EVENT.EVN_DATE";
-			
-			// execute query
-			$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
+			$result	= db_query("SELECT ATTENDANCE.*, EVENT.EVN_NAME, EVENT.EVN_HOUR, EVENT.EVN_DATE FROM ATTENDANCE LEFT JOIN EVENT ON ATTENDANCE.ATT_EVN = EVENT.EVN_ID WHERE ATTENDANCE.ATT_STUD = ? ORDER BY EVENT.EVN_DATE", [$STD_ID]);
 			
 			// iterate through all rows in result set
 			while($row = mysqli_fetch_array($result))
@@ -188,43 +169,24 @@
 				// display barcode
 				$D_BC		= true;
 				
-				// extract specific fields
-				$ATT_ID 	= $row["ATT_ID"];
-				$ATT_EVN	= $row["ATT_EVN"];
-				$ATT_TIME	= $row["ATT_TIME"];
-				$ATT_CAT	= $row["ATT_CAT"];
-				$ATT_CRDT	= $row["ATT_CRDT"];
-				
-				// Decode codes into string
-				$sql_display = "SELECT EVN_NAME, EVN_HOUR, EVN_DATE FROM EVENT WHERE EVN_ID = $ATT_EVN";
-				
-				$result_dispay = mysqli_query($condb, $sql_display);
-				while($row = mysqli_fetch_array($result_dispay))
-				{
-					$EVN_NAME	= $row["EVN_NAME"];
-					$EVN_HOUR	= $row["EVN_HOUR"];
-					$EVN_DATE	= $row["EVN_DATE"];
-					
-					// Date reformatting algorithm
-					$DATE_FORMAT	= strtotime($EVN_DATE);
-					$DDATE			= date("j F Y", $DATE_FORMAT);
-				}
+				$ATT_CRDT	= (int) $row["ATT_CRDT"];
+				$EVN_HOUR	= (int) $row["EVN_HOUR"];
+				$DDATE		= $row["EVN_DATE"] ? date("j F Y", strtotime($row["EVN_DATE"])) : "";
 				
 				echo "<tr>
 						<td align=\"center\">$BIL</td>
-						<td>$ATT_EVN - $EVN_NAME</td>
-						<td align=\"center\">$DDATE</td>
-						<td align=\"center\">$DATT_CAT[$ATT_CAT]</td>
+						<td>" . e($row["ATT_EVN"] . " - " . $row["EVN_NAME"]) . "</td>
+						<td align=\"center\">" . e($DDATE) . "</td>
+						<td align=\"center\">" . e($DATT_CAT[$row["ATT_CAT"]] ?? $row["ATT_CAT"]) . "</td>
 						<td align=\"center\">$ATT_CRDT</td>
 						<td align=\"center\">$EVN_HOUR jam</td>
 					</tr>";
-					
+				
 				$MERIT		+= $ATT_CRDT;
 				$T_HOUR		+= $EVN_HOUR;
-				$MARKS		= $MERIT * $T_HOUR;
-				$T_MARKS	+= $MARKS;
+				$T_MARKS	+= $ATT_CRDT * $EVN_HOUR;
 			}
-				
+			
 			if($D_BC == false)
 			{
 				echo "<tr><td align='center' colspan=\"6\"><br><i> Tiada kehadiran untuk dipaparkan </i><br><br></td></tr>";
@@ -250,6 +212,7 @@
 			echo "<tr><td align='center'><br><i> Pelajar tidak dijumpai </i><br><br></td></tr>";
 		}
 		?>
+
 		<!--</tbody>-->
 	</table>
   </body>

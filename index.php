@@ -1,3 +1,4 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
@@ -27,12 +28,7 @@
 			exit;
 		}
 		
-		$problem = ""; // 2) Declare
-		// $problem = $_GET["problem"];	// 1) Undefined index error
-		if(isset($_GET["err"]))	// 3) The magic function
-		{
-			$problem = $_GET["err"];
-		}
+		$problem = (string) (is_string($_GET["err"] ?? null) ? $_GET["err"] : "");
 		$errormsg = "<font color='red'> ERROR: ";
 		if($problem == "failed")
 		{

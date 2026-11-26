@@ -1,72 +1,43 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
   <?php
 		session_start();
-		if(!$_SESSION['pc_login'] || $_SESSION['pc_priv'] == "BLUE")
-		{
-			header("Location: index.php?err=expired");
-			exit;
-		}
+		require_once __DIR__ . '/connectDB.php';
+		require_once __DIR__ . '/dictionary.php';
+		require_login('REDD', 'BLCK');
 		$name	= $_SESSION['pc_name'];
 		
-		include('connectDB.php');
-		include("dictionary.php");
+		$ID		= request_id($_GET, 'EVN');
 		
-		$ID		= $_GET['EVN'];
-		
-		// Padam penganjur
+		// Padam kehadiran (only records of this event)
 		if(isset($_POST['DEL_ID']))
 		{
-			// get ID value
-			$DEL_ID = $_POST['DEL_ID'];
-			$EVN_ID = $_POST['DEL'];
+			$DEL_ID = request_ids($_POST, 'DEL_ID');
+			$EVN_ID = request_id($_POST, 'DEL');
 			
-			$sql_del	= null;
-			
-			$I_DEL	= 0;
-			$I_MAX	= count($DEL_ID);
-			
-			while($I_DEL < $I_MAX)
+			$deleted = 0;
+			foreach($DEL_ID as $DEL_ID_S)
 			{
-				$DEL_ID_S	= mysqli_real_escape_string($condb, $DEL_ID[$I_DEL]);
-				
-				$sql_del	= "DELETE FROM ATTENDANCE WHERE ATT_ID = $DEL_ID_S;";
-				// delete the entry
-				$result = mysqli_query($condb, "$sql_del"); 
-				
-				$I_DEL++;
+				if (db_query("DELETE FROM ATTENDANCE WHERE ATT_ID = ? AND ATT_EVN = ?", [$DEL_ID_S, $EVN_ID]))
+				{
+					$deleted += mysqli_affected_rows($condb);
+				}
 			}
 			
-			// delete the entry
-			//$result = mysqli_query($condb, "$sql_del"); 
-			
 			// check for deletion
-			if ($result)
+			if ($DEL_ID && $deleted === count($DEL_ID))
 			{
-			   echo '<html>
-						<head>
-							<script>
-								window.alert("Kehadiran berjaya di padam!");
-							</script>
-							<meta http-equiv="refresh" content="0; url=list_attd_2.php?EVN=' . $EVN_ID . '" />
-						</head>
-					</html>';
+				alert_page("Kehadiran berjaya di padam!", "list_attd_2.php?EVN=" . $EVN_ID);
 			}
 			else
 			{
-				//echo "SQL insert statement failed.<br>";
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Kehadiran gagal di padam!");
-								window.history.go(-1);
-							</script>
-						</head>
-					</html>';
+				alert_page("Kehadiran gagal di padam!", null, true);
 			}
 		}
-	?>
+	
+?>
     <title>PINCard</title>
 	
 	<link rel="apple-touch-icon" sizes="120x120" href="favicons/apple-touch-icon.png?v=kPgEkaXqbz">
@@ -134,7 +105,7 @@
 		  	<div class="sidebar content-box" style="display: block;">
                 <ul class="nav">
                     <!-- Main menu -->
-                    <?php include("nav.php"); ?>
+                    <?php include __DIR__ . '/nav.php'; ?>
                 </ul>
              </div>
 		  </div>
@@ -145,17 +116,15 @@
 						<div class="panel-title">Senarai Kehadiran Program</div>
 					</div>
 					<div class="content-box-large box-with-header">
-						<form id="DEL_ATTD" action="list_attd_2.php?EVN=<?php echo $ID; ?>" method ="POST" onsubmit="return validate(this);">
-							<input type="hidden" name="DEL" value="<?php echo $ID; ?>">
+						<form id="DEL_ATTD" action="list_attd_2.php?EVN=<?php echo e($ID); ?>" method ="POST" onsubmit="return validate(this);">
+							<input type="hidden" name="DEL" value="<?php echo e($ID); ?>">
 							<table class="table table-bordered table-hover table-striped">
 								<tbody>
 								<?php
 								$C_EVN	= false;
 								$D_BC	= false;
 								
-								$sql_display1	= "SELECT * FROM EVENT WHERE EVN_ID = $ID";
-								$result_dispay1	= mysqli_query($condb, $sql_display1);
-								if($row1 = mysqli_fetch_array($result_dispay1))
+								if($ID !== null && ($row1 = db_row("SELECT * FROM EVENT WHERE EVN_ID = ?", [$ID])))
 								{
 									$C_EVN		= true;
 									
@@ -168,15 +137,12 @@
 									$EVN_DATE	= $row1["EVN_DATE"];
 									
 									// Date reformatting algorithm
-									$DATE_FORMAT	= strtotime($EVN_DATE);
-									$DDATE			= date("j F Y", $DATE_FORMAT);
+									$DDATE			= date("j F Y", strtotime($EVN_DATE));
 								}
 								
 								if($C_EVN == true)
 								{
-									$sql_display2 = "SELECT ORG_NAME FROM ORGANIZER WHERE ORG_ID = \"$EVN_ORG\"";
-									$result_dispay2 = mysqli_query($condb, $sql_display2);
-									while($row2 = mysqli_fetch_array($result_dispay2)) { $ORG_NAME = $row2["ORG_NAME"]; }
+									$ORG_NAME	= db_row("SELECT ORG_NAME FROM ORGANIZER WHERE ORG_ID = ?", [$EVN_ORG])["ORG_NAME"] ?? "";
 									
 									echo "<thead>
 											<tr>
@@ -187,27 +153,27 @@
 													</tr>
 													<tr>
 														<td>Nama Program</td>
-														<td>: $EVN_NAME</td>
+														<td>: " . e($EVN_NAME) . "</td>
 													</tr>
 													<tr>
 														<td>Anjuran</td>
-														<td>: $ORG_NAME</td>
+														<td>: " . e($ORG_NAME) . "</td>
 													</tr>
 													<tr>
 														<td>Tahap Penganjuran</td>
-														<td>: $DEVN_TYPE[$EVN_TYPE]</td>
+														<td>: " . e($DEVN_TYPE[$EVN_TYPE] ?? $EVN_TYPE) . "</td>
 													</tr>
 													<tr>
 														<td>Jam Temu Program</td>
-														<td>: $EVN_HOUR jam</td>
+														<td>: " . e($EVN_HOUR) . " jam</td>
 													</tr>
 													<tr>
 														<td>Tarikh Berlansung</td>
-														<td>: $DDATE</td>
+														<td>: " . e($DDATE) . "</td>
 													</tr>
 													<tr>
 														<td>Tempat Berlansung</td>
-														<td>: $EVN_VENUE</td>
+														<td>: " . e($EVN_VENUE) . "</td>
 													</tr>
 												</table>
 												</td>
@@ -226,11 +192,7 @@
 									// Initialise index number
 									$BIL = 0;
 									
-									// create the query
-									$sql = "SELECT * FROM ATTENDANCE WHERE ATT_EVN = $ID ORDER BY ATT_CAT, ATT_STUD";
-									
-									// execute query
-									$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
+									$result = db_query("SELECT ATTENDANCE.*, STUDENT.NAME FROM ATTENDANCE LEFT JOIN STUDENT ON STUDENT.STUD_ID = ATTENDANCE.ATT_STUD WHERE ATT_EVN = ? ORDER BY ATT_CAT, ATT_STUD", [$ID]);
 									
 									// iterate through all rows in result set
 									while($row = mysqli_fetch_array($result))
@@ -240,26 +202,13 @@
 										// display barcode
 										$D_BC		= true;
 										
-										// extract specific fields
-										$ATT_ID 	= $row["ATT_ID"];
-										$ATT_STUD	= $row["ATT_STUD"];
-										$ATT_EVN	= $row["ATT_EVN"];
-										$ATT_TIME	= $row["ATT_TIME"];
-										$ATT_CAT	= $row["ATT_CAT"];
-										$ATT_CRDT	= $row["ATT_CRDT"];
-										
-										// Decode codes into string
-										$sql_display = "SELECT NAME FROM STUDENT WHERE STUD_ID = '$ATT_STUD'";
-										$result_dispay = mysqli_query($condb, $sql_display);
-										while($row = mysqli_fetch_array($result_dispay)) { $STUD_NAME = $row["NAME"]; }
-										
 										echo "<tr>
-												<td align=\"center\">$BIL</td>
-												<td align=\"center\">$ATT_STUD</td>
-												<td><a target=\"_blank\" href=\"stud_details.php?ID=$ATT_STUD\">$STUD_NAME</a></td>
-												<td align=\"center\">$DATT_CAT[$ATT_CAT]</td>
-												<td align=\"center\">$ATT_CRDT</td>
-												<td align=\"center\"><input type=\"checkbox\" name=\"DEL_ID[]\" value=\"$ATT_ID\"></td>
+												<td align=\"center\">" . e($BIL) . "</td>
+												<td align=\"center\">" . e($row["ATT_STUD"]) . "</td>
+												<td><a target=\"_blank\" href=\"stud_details.php?ID=" . e($row["ATT_STUD"]) . "\">" . e($row["NAME"]) . "</a></td>
+												<td align=\"center\">" . e($DATT_CAT[$row["ATT_CAT"]] ?? $row["ATT_CAT"]) . "</td>
+												<td align=\"center\">" . e($row["ATT_CRDT"]) . "</td>
+												<td align=\"center\"><input type=\"checkbox\" name=\"DEL_ID[]\" value=\"" . e($row["ATT_ID"]) . "\"></td>
 											</tr>";
 									}
 										
@@ -273,6 +222,7 @@
 									echo "<tr><td align='center'><i> Program tidak dijumpai </i></td></tr>";
 								}
 								?>
+
 								</tbody>
 							</table>
 							<?php

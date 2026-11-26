@@ -1,151 +1,45 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
   <?php
 		session_start();
-		if(!$_SESSION['pc_login'] || $_SESSION['pc_priv'] == "BLUE")
-		{
-			header("Location: index.php?err=expired");
-			exit;
-		}
+		require_once __DIR__ . '/connectDB.php';
+		require_once __DIR__ . '/dictionary.php';
+		require_login('REDD', 'BLCK');
 		$name	= $_SESSION['pc_name'];
-		
-		include('connectDB.php');
-		include("dictionary.php");
 		
 		if(isset($_POST['DAFTAR']))
 		{
-			$EVN_NAME		= mysqli_real_escape_string($condb, $_POST['EVN_NAME']);
-			$EVN_ORG		= mysqli_real_escape_string($condb, $_POST['EVN_ORG']);
-			$EVN_TYPE		= mysqli_real_escape_string($condb, $_POST['EVN_TYPE']);
-			$EVN_HOUR		= mysqli_real_escape_string($condb, $_POST['EVN_HOUR']);
-			$EVN_VENUE		= mysqli_real_escape_string($condb, $_POST['EVN_VENUE']);
-			$EVN_DATE		= mysqli_real_escape_string($condb, $_POST['EVN_DATE']);
-			
-			if($EVN_HOUR > $HOUR_LIM)
+			[$F, $error] = read_event_form($_POST);
+
+			if($error !== null)
 			{
-				echo "SQL insert statement failed.<br>";
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Jam temu program melebihi had ' . $HOUR_LIM . ' jam!");
-								window.history.go(-1);
-							</script>
-						</head>
-					</html>';
+				alert_page($error, null, true);
 			}
 			else
 			{
-				// Event ID Generator
-				$h = "8";	// to rematch time with Malaysian GMT +8 time (please truncate the +/- sign)
-				$hm = $h * 60; 
-				$ms = $hm * 60;
-				$DATE = gmdate("ymd", time()+($ms));	// use (-) for -ve GMT and (+) for +ve GMT
-				$DATETIME = gmdate("Y-m-d H:i:s", time()+($ms));	// use (-) for -ve GMT and (+) for +ve GMT
-							/* 	-----------------------
-								Timestamp Configuration
-								-----------------------
-								Y - Full year
-								m - month with leading zero
-								d - date with leading zero
-								H - 24-hour format hour
-								i - minute with leading zero
-								s - second with leading zero
-								
-								d - The day of the month (from 01 to 31)
-								D - A textual representation of a day (three letters)
-								j - The day of the month without leading zeros (1 to 31)
-								l (lowercase 'L') - A full textual representation of a day
-								N - The ISO-8601 numeric representation of a day (1 for Monday, 7 for Sunday)
-								S - The English ordinal suffix for the day of the month (2 characters st, nd, rd or th. Works well with j)
-								w - A numeric representation of the day (0 for Sunday, 6 for Saturday)
-								z - The day of the year (from 0 through 365)
-								W - The ISO-8601 week number of year (weeks starting on Monday)
-								F - A full textual representation of a month (January through December)
-								m - A numeric representation of a month (from 01 to 12)
-								M - A short textual representation of a month (three letters)
-								n - A numeric representation of a month, without leading zeros (1 to 12)
-								t - The number of days in the given month
-								L - Whether it's a leap year (1 if it is a leap year, 0 otherwise)
-								o - The ISO-8601 year number
-								Y - A four digit representation of a year
-								y - A two digit representation of a year
-								a - Lowercase am or pm
-								A - Uppercase AM or PM
-								B - Swatch Internet time (000 to 999)
-								g - 12-hour format of an hour (1 to 12)
-								G - 24-hour format of an hour (0 to 23)
-								h - 12-hour format of an hour (01 to 12)
-								H - 24-hour format of an hour (00 to 23)
-								i - Minutes with leading zeros (00 to 59)
-								s - Seconds, with leading zeros (00 to 59)
-								u - Microseconds (added in PHP 5.2.2)
-								e - The timezone identifier (Examples: UTC, GMT, Atlantic/Azores)
-								I (capital i) - Whether the date is in daylights savings time (1 if Daylight Savings Time, 0 otherwise)
-								O - Difference to Greenwich time (GMT) in hours (Example: +0100)
-								P - Difference to Greenwich time (GMT) in hours:minutes (added in PHP 5.1.3)
-								T - Timezone abbreviations (Examples: EST, MDT)
-								Z - Timezone offset in seconds. The offset for timezones west of UTC is negative (-43200 to 50400)
-								c - The ISO-8601 date (e.g. 2013-05-05T16:34:42+00:00)
-								r - The RFC 2822 formatted date (e.g. Fri, 12 Apr 2013 12:01:05 +0200)
-								U - The seconds since the Unix Epoch (January 1 1970 00:00:00 GMT)
-								
-								# Please reconfigure server time to:
-								timezone - Asia/Kuala_Lumour
-								latitude = 3.133333
-								longitude = 101.683333
-								
-								#date() - will fetch server date
-								#gmdate() - will fetch GMT 0:00 date
-							*/
-				// End of Event ID Generator
-				
-				$sql_evn_id		= "SELECT COUNT(EVN_NAME) FROM EVENT WHERE EVN_ID LIKE \"$DATE%\"";
-				$result_evn_id	= mysqli_query($condb, $sql_evn_id);
-				$row_evn_id		= mysqli_fetch_array($result_evn_id);
-				$id_count		= $row_evn_id["COUNT(EVN_NAME)"];
-				$id_inc			= $id_count + 1;
-				
-				if($id_inc < 10)
-				{	$id_inc = "0" . $id_inc;	}
-				
-				$EVN_ID			= $DATE . $id_inc;
-				
-				$EVN_RB			= $_SESSION['pc_ident'];
-				$EVN_RT			= $DATETIME;
-				
-				$sql="INSERT INTO EVENT (EVN_ID, EVN_NAME, EVN_ORG, EVN_TYPE, EVN_HOUR, EVN_VENUE, EVN_DATE, EVN_RB, EVN_RT) VALUES ('$EVN_ID', '$EVN_NAME', '$EVN_ORG', '$EVN_TYPE', $EVN_HOUR, '$EVN_VENUE', '$EVN_DATE', '$EVN_RB', '$EVN_RT')";
-				
-				// execute query
-				$exe_sql = mysqli_query($condb, $sql);
-				
+				// Event ID: date (yymmdd) + running number of the day (01, 02, ...), after the highest one used.
+				$DATE	= (int) date("ymd");
+				$last	= db_row("SELECT MAX(EVN_ID) AS LAST_ID FROM EVENT WHERE EVN_ID BETWEEN ? AND ?", [$DATE * 100, $DATE * 100 + 99])["LAST_ID"] ?? null;
+				$EVN_ID	= $last ? (int) $last + 1 : $DATE * 100 + 1;
+
+				$exe_sql = db_query("INSERT INTO EVENT (EVN_ID, EVN_NAME, EVN_ORG, EVN_TYPE, EVN_HOUR, EVN_VENUE, EVN_DATE, EVN_RB, EVN_RT) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+					[$EVN_ID, $F['EVN_NAME'], $F['EVN_ORG'], $F['EVN_TYPE'], $F['EVN_HOUR'], $F['EVN_VENUE'], $F['EVN_DATE'], $_SESSION['pc_ident'], date("Y-m-d H:i:s")]);
+
 				// confirming the record is added
 				if ($exe_sql)
 				{
-					echo '<html>
-							<head>
-								<script>
-									window.alert("Pendaftaran berjaya!\nProgram telah di simpan ke dalam pangkalan data.");
-								</script>
-								<meta http-equiv="refresh" content="0; url=evn_details.php?ID=' . $EVN_ID . '"/>
-							</head>
-						</html>';
+					alert_page("Pendaftaran berjaya!\nProgram telah di simpan ke dalam pangkalan data.", "evn_details.php?ID=" . $EVN_ID);
 				}
 				else
 				{
-					echo "SQL insert statement failed.<br>";
-					echo '<html>
-							<head>
-								<script>
-									window.alert("Pendaftaran program gagal!");
-									window.history.go(-1);
-								</script>
-							</head>
-						</html>';
+					alert_page("Pendaftaran program gagal!", null, true);
 				}
 			}
 		}
-	?>
+	
+?>
     <title>PINCard</title>
 	
 	<link rel="apple-touch-icon" sizes="120x120" href="favicons/apple-touch-icon.png?v=kPgEkaXqbz">
@@ -213,7 +107,7 @@
 		  	<div class="sidebar content-box" style="display: block;">
                 <ul class="nav">
                     <!-- Main menu -->
-                    <?php include("nav.php"); ?>
+                    <?php include __DIR__ . '/nav.php'; ?>
                 </ul>
              </div>
 		  </div>
@@ -237,13 +131,12 @@
 										<option disabled selected> Sila pilih </option>
 										<option disabled> </option>
 										<?php
-										$sql_choose = "SELECT * FROM ORGANIZER ORDER BY ORG_NAME";
-										$result_choose = mysqli_query($condb, $sql_choose);
+										$result_choose = db_query("SELECT * FROM ORGANIZER ORDER BY ORG_NAME");
 										while ($row = mysqli_fetch_array($result_choose))
 										{
 											$ORG_ID		= $row["ORG_ID"];
 											$ORG_NAME	= $row["ORG_NAME"];
-											echo '<option value="' . $ORG_ID . '"> ' . $ORG_NAME . ' (' . $ORG_ID . ')</option>';
+											echo '<option value="' . e($ORG_ID) . '"> ' . e($ORG_NAME) . ' (' . e($ORG_ID) . ')</option>';
 										}
 										?>
 									</select>

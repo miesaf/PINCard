@@ -1,17 +1,13 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
   <?php
 		session_start();
-		if(!$_SESSION['pc_login'])
-		{
-			header("Location: index.php?err=expired");
-			exit;
-		}
+		require_once __DIR__ . '/connectDB.php';
+		require_once __DIR__ . '/dictionary.php';
+		require_login();
 		$name	= $_SESSION['pc_name'];
-		
-		include('connectDB.php');
-		include("dictionary.php");
 	?>
     <title>PINCard</title>
 	
@@ -80,7 +76,7 @@
 		  	<div class="sidebar content-box" style="display: block;">
                 <ul class="nav">
                     <!-- Main menu -->
-                    <?php include("nav.php"); ?>
+                    <?php include __DIR__ . '/nav.php'; ?>
                 </ul>
              </div>
 		  </div>
@@ -94,18 +90,12 @@
 						<table class="table table-bordered table-hover table-striped">
 							<tbody>
 							<?php
-							$ID		= $_GET['ID'];
+							$ID		= request_id($_GET, 'ID');
 							
-							if(($ID != null) && is_numeric($ID))
+							if($ID !== null)
 							{
-								// create the query
-								$sql = "SELECT * FROM EVENT WHERE EVN_ID = $ID";
-								
-								// execute query
-								$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
-								
 								// iterate through all rows in result set
-								if($row = mysqli_fetch_array($result))
+								if($row = db_row("SELECT * FROM EVENT WHERE EVN_ID = ?", [$ID]))
 								{									
 									// extract specific fields
 									$EVN_ID 	= $row["EVN_ID"];
@@ -119,66 +109,58 @@
 									$EVN_RT		= $row["EVN_RT"];
 									
 									// Date reformatting algorithm
-									$DATE_FORMAT	= strtotime($EVN_DATE);
-									$DDATE			= date("j F Y", $DATE_FORMAT);
-									
-									// Date reformatting algorithm
-									$DATE_FORMAT2	= strtotime($EVN_RT);
-									$DDATE2			= date("g:i:s a, j F Y", $DATE_FORMAT2);
+									$DDATE			= date("j F Y", strtotime($EVN_DATE));
+									$DDATE2			= date("g:i:s a, j F Y", strtotime($EVN_RT));
 									
 									// Decode codes into string
-									$sql_display = "SELECT ORG_NAME FROM ORGANIZER WHERE ORG_ID = '$EVN_ORG'";
-									$result_dispay = mysqli_query($condb, $sql_display);
-									while($row = mysqli_fetch_array($result_dispay)) { $DEVN_ORG = $row["ORG_NAME"]; }
-									
-									$sql_display = "SELECT NAME FROM ADMIN WHERE NO_ID = $EVN_RB";
-									$result_dispay = mysqli_query($condb, $sql_display);
-									while($row = mysqli_fetch_array($result_dispay)) { $DEVN_RB = $row["NAME"]; }
+									$DEVN_ORG	= db_row("SELECT ORG_NAME FROM ORGANIZER WHERE ORG_ID = ?", [$EVN_ORG])["ORG_NAME"] ?? "";
+									$DEVN_RB	= db_row("SELECT NAME FROM ADMIN WHERE NO_ID = ?", [$EVN_RB])["NAME"] ?? "";
 									
 									echo "	<tr>
 												<td>ID Program</td>
-												<td><b>$EVN_ID</b></td>
+												<td><b>" . e($EVN_ID) . "</b></td>
 											</tr>
 											<tr>
 												<td>Nama Program</td>
-												<td><b>$EVN_NAME</b></td>
+												<td><b>" . e($EVN_NAME) . "</b></td>
 											</tr>
 											<tr>
 												<td>Penganjur Program</td>
-												<td><b>$EVN_ORG - $DEVN_ORG</b></td>
+												<td><b>" . e("$EVN_ORG - $DEVN_ORG") . "</b></td>
 											</tr>
 											<tr>
 												<td>Tahap Pengajuran Program</td>
-												<td><b>$DEVN_TYPE[$EVN_TYPE]</b></td>
+												<td><b>" . e($DEVN_TYPE[$EVN_TYPE] ?? $EVN_TYPE) . "</b></td>
 											</tr>
 											<tr>
 												<td>Jam Temu Program</td>
-												<td><b>$EVN_HOUR jam</b></td>
+												<td><b>" . e($EVN_HOUR) . " jam</b></td>
 											</tr>
 											<tr>
 												<td>Lokasi Program</td>
-												<td><b>$EVN_VENUE</b></td>
+												<td><b>" . e($EVN_VENUE) . "</b></td>
 											</tr>
 											<tr>
 												<td>Tarikh Program</td>
-												<td><b>$DDATE</b></td>
+												<td><b>" . e($DDATE) . "</b></td>
 											</tr>
 											<tr>
 												<td>Program Didaftarkan Oleh</td>
-												<td><b>$DEVN_RB</b></td>
+												<td><b>" . e($DEVN_RB) . "</b></td>
 											</tr>
 											<tr>
 												<td>Tarikh Pendaftaran Program</td>
-												<td><b>$DDATE2</b></td>
+												<td><b>" . e($DDATE2) . "</b></td>
 											</tr>";
+									
 									if($_SESSION["pc_priv"] == "BLCK")
 									{
 										echo "<tr>
 												<td align=\"center\" colspan=\"2\">
-													<a href='evn_amend.php?AMD=$EVN_ID'>
+													<a href='evn_amend.php?AMD=" . e($EVN_ID) . "'>
 														<button class='btn btn-outline btn-warning' type='button' value='Pinda'>Pinda</button>
 													</a>
-													<button class='btn btn-outline btn-danger' type='button' value='Padam' onClick='confirmDel(\"$EVN_ID\")'>Padam</button>
+													<button class='btn btn-outline btn-danger' type='button' value='Padam' onClick='confirmDel(" . e(js((string) $EVN_ID)) . ")'>Padam</button>
 												</td>
 											</tr>";
 									}
@@ -193,6 +175,7 @@
 								echo "<tr><td align='center'><i> ID program tidak sah </i></td></tr>";
 							}
 							?>
+
 							</tbody>
 						</table>
 					</div>
@@ -224,7 +207,7 @@
 			var del = confirm("Adakah anda pasti untuk memadam program ini?");
 			if (del == true)
 			{
-				window.location.assign("evn_list.php?DEL=" + nums);
+				window.location.assign("evn_list.php?DEL=" + encodeURIComponent(nums));
 			} else 
 			{
 				alert("Program tidak di padam.");

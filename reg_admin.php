@@ -1,74 +1,42 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
   <?php
 		session_start();
-		if(!$_SESSION['pc_login'] || $_SESSION['pc_priv'] != "BLCK")
-		{
-			header("Location: index.php?err=expired");
-			exit;
-		}
+		require_once __DIR__ . '/connectDB.php';
+		require_once __DIR__ . '/dictionary.php';
+		require_login('BLCK');
 		$name	= $_SESSION['pc_name'];
-		
-		include('connectDB.php');
-		include("dictionary.php");
 		
 		// Tambah Akaun
 		if(isset($_POST['DAFTAR']))
 		{	
-			// Variables from tadbir_program.php
-			$NO_ID		= mysqli_real_escape_string($condb, $_POST['NO_ID']);
-			$NAME		= mysqli_real_escape_string($condb, $_POST['NAME']);
-			$PWORD1		= mysqli_real_escape_string($condb, $_POST['PWORD1']);
-			$PWORD2		= mysqli_real_escape_string($condb, $_POST['PWORD2']);
-			$TYPE		= mysqli_real_escape_string($condb, $_POST['TYPE']);
+			$NO_ID		= request_id($_POST, 'NO_ID');
+			$NAME		= request_text($_POST, 'NAME') ?? '';
+			$PWORD1		= (string) (is_string($_POST['PWORD1'] ?? null) ? $_POST['PWORD1'] : '');
+			$PWORD2		= (string) (is_string($_POST['PWORD2'] ?? null) ? $_POST['PWORD2'] : '');
+			$TYPE		= request_text($_POST, 'TYPE') ?? '';
 			
-			if($PWORD1 == $PWORD2)
+			if($NO_ID === null || $NAME === '' || $PWORD1 === '' || !in_array($TYPE, ["REDD", "BLCK"], true))
 			{
-				//SQL query command
-				$sql="INSERT INTO ADMIN (NO_ID, NAME, PWORD, TYPE) VALUES ($NO_ID, '$NAME', '$PWORD1', '$TYPE')";
-				
-				// execute query
-				$exe_sql = mysqli_query($condb, $sql);
-				
-				// confirming the record is added
-				if ($exe_sql)
-				{
-					echo '<html>
-							<head>
-								<script>
-									window.alert("Pendaftaran akaun pentadbir berjaya!");
-								</script>
-								<meta http-equiv="refresh" content="0; url=list_admin.php" />
-							</head>
-						</html>';
-				}
-				else
-				{
-					echo "SQL insert statement failed.<br>";
-					echo '<html>
-							<head>
-								<script>
-									window.alert("Pendaftaran akaun admin gagal!");
-									window.history.go(-1);
-								</script>
-							</head>
-						</html>';
-				}
+				alert_page("Sila lengkapkan nombor pekerja, nama, kata laluan dan jenis akaun!", null, true);
+			}
+			elseif(!hash_equals($PWORD1, $PWORD2))
+			{
+				alert_page("Kata laluan tidak sepadan!", null, true);
+			}
+			elseif(db_query("INSERT INTO ADMIN (NO_ID, NAME, PWORD, TYPE) VALUES (?, ?, ?, ?)", [$NO_ID, $NAME, password_hash($PWORD1, PASSWORD_DEFAULT), $TYPE]))
+			{
+				alert_page("Pendaftaran akaun pentadbir berjaya!", "list_admin.php");
 			}
 			else
 			{
-				echo '<html>
-							<head>
-								<script>
-									window.alert("Kata laluan tidak sepadan!");
-									window.history.go(-1);
-								</script>
-							</head>
-						</html>';
+				alert_page("Pendaftaran akaun admin gagal!", null, true);
 			}
 		}
-	?>
+	
+?>
     <title>PINCard</title>
 	
 	<link rel="apple-touch-icon" sizes="120x120" href="favicons/apple-touch-icon.png?v=kPgEkaXqbz">
@@ -136,7 +104,7 @@
 		  	<div class="sidebar content-box" style="display: block;">
                 <ul class="nav">
                     <!-- Main menu -->
-                    <?php include("nav.php"); ?>
+                    <?php include __DIR__ . '/nav.php'; ?>
                 </ul>
              </div>
 		  </div>

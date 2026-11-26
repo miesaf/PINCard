@@ -1,132 +1,70 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
   <?php
 		session_start();
-		if(!$_SESSION['pc_login'] || $_SESSION['pc_priv'] != "BLCK")
-		{
-			header("Location: index.php?err=expired");
-			exit;
-		}
+		require_once __DIR__ . '/connectDB.php';
+		require_once __DIR__ . '/dictionary.php';
+		require_login('BLCK');
 		$name	= $_SESSION['pc_name'];
 		
-		include('connectDB.php');
-		include("dictionary.php");
-		
-		// Tambah kelab
+		// Tambah penganjur
 		if(isset($_POST['REG']))
-		{	
-			$ORG_ID		= mysqli_real_escape_string($condb, $_POST['ORG_ID']);
-			$ORG_NAME	= mysqli_real_escape_string($condb, $_POST['ORG_NAME']);
-
-			//SQL query command
-			$sql="INSERT INTO ORGANIZER (ORG_ID, ORG_NAME) VALUES ('$ORG_ID', '$ORG_NAME')";
+		{
+			$ORG_ID	= request_text($_POST, 'ORG_ID') ?? '';
+			$ORG_NAME	= request_text($_POST, 'ORG_NAME') ?? '';
 			
-			// execute query
-			$exe_sql = mysqli_query($condb, $sql);
-			
-			// confirming the record is added
-			if ($exe_sql)
+			if($ORG_ID === '' || $ORG_NAME === '')
 			{
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Pendaftaran penganjur berjaya!");
-							</script>
-							<meta http-equiv="refresh" content="0; url=ad_org.php" />
-						</head>
-					</html>';
+				alert_page("Sila lengkapkan kod dan nama!", null, true);
+			}
+			elseif(db_query("INSERT INTO ORGANIZER (ORG_ID, ORG_NAME) VALUES (?, ?)", [$ORG_ID, $ORG_NAME]))
+			{
+				alert_page("Pendaftaran penganjur berjaya!", "ad_org.php");
 			}
 			else
 			{
-				echo "SQL insert statement failed.<br>";
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Pendaftaran penganjur gagal!");
-								window.history.go(-1);
-							</script>
-						</head>
-					</html>';
+				alert_page("Pendaftaran penganjur gagal!", null, true);
 			}
 		}
 		
-		// Pinda Akaun
+		// Pinda penganjur
 		if(isset($_POST['AMD_ORG']))
 		{
-			$ID2		= mysqli_real_escape_string($condb, $_POST['ID2']);
-			$ORG_ID		= mysqli_real_escape_string($condb, $_POST['ORG_ID']);
-			$ORG_NAME	= mysqli_real_escape_string($condb, $_POST['ORG_NAME']);
-
-			$sql="UPDATE ORGANIZER SET ORG_ID = '$ORG_ID', ORG_NAME = '$ORG_NAME' WHERE ORG_ID = '$ID2'";
+			$ID2	= request_text($_POST, 'ID2') ?? '';
+			$ORG_ID	= request_text($_POST, 'ORG_ID') ?? '';
+			$ORG_NAME	= request_text($_POST, 'ORG_NAME') ?? '';
 			
-			// execute query
-			$exe_sql = mysqli_query($condb, $sql);
-			
-			// confirming the record is added
-			if ($exe_sql)
+			if($ORG_ID === '' || $ORG_NAME === '')
 			{
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Pindaan penganjur berjaya!");
-							</script>
-							<meta http-equiv="refresh" content="0; url=ad_org.php" />
-						</head>
-					</html>';
+				alert_page("Sila lengkapkan kod dan nama!", null, true);
+			}
+			elseif(db_query("UPDATE ORGANIZER SET ORG_ID = ?, ORG_NAME = ? WHERE ORG_ID = ?", [$ORG_ID, $ORG_NAME, $ID2]))
+			{
+				alert_page("Pindaan penganjur berjaya!", "ad_org.php");
 			}
 			else
 			{
-				echo "SQL insert statement failed.<br>";
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Pindaan penganjur gagal!");
-								window.history.go(-1);
-							</script>
-						</head>
-					</html>';
+				alert_page("Pindaan penganjur gagal!", null, true);
 			}
 		}
 		
-		// Padam penganjur
-		if(isset($_GET['DEL']))
+		// Padam penganjur (refused while students or events still use it)
+		$ID = request_text($_GET, 'DEL');
+		if($ID !== null)
 		{
-			// get ID value
-			$ID = mysqli_real_escape_string($condb, $_GET['DEL']);
-			
-			// delete the entry
-			$result = mysqli_query($condb, "DELETE FROM ORGANIZER WHERE ORG_ID = \"$ID\""); 
-			
-			// check for deletion
-			if ($result)
+			if (db_query("DELETE FROM ORGANIZER WHERE ORG_ID = ?", [$ID]) && mysqli_affected_rows($condb) === 1)
 			{
-			   echo '<html>
-						<head>
-							<script>
-								window.alert("Program penganjur di padam!");
-							</script>
-							<meta http-equiv="refresh" content="0; url=ad_org.php" />
-						</head>
-					</html>';
+				alert_page("Penganjur berjaya di padam!", "ad_org.php");
 			}
 			else
 			{
-				//echo "SQL insert statement failed.<br>";
-				echo '<html>
-						<head>
-							<script>
-								window.alert("Penganjur gagal di padam!");
-								window.history.go(-1);
-							</script>
-						</head>
-					</html>';
+				alert_page("Penganjur gagal di padam!", null, true);
 			}
 		}
 		
-		$sql	= "SELECT * FROM ORGANIZER ORDER BY ORG_ID";
-		
-		$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
+		$result = db_query("SELECT * FROM ORGANIZER ORDER BY ORG_ID");
 	?>
     <title>PINCard</title>
 	
@@ -195,7 +133,7 @@
 		  	<div class="sidebar content-box" style="display: block;">
                 <ul class="nav">
                     <!-- Main menu -->
-                    <?php include("nav.php"); ?>
+                    <?php include __DIR__ . '/nav.php'; ?>
                 </ul>
              </div>
 		  </div>
@@ -243,38 +181,40 @@
 					</div>
 					<div class="content-box-large box-with-header">
 <?php
-		$PINDA_ID	= $_GET['AMD'];
-		
-		// create the query
-		$sql = "SELECT * FROM ORGANIZER WHERE ORG_ID = \"$PINDA_ID\"";
-		
-		// execute query
-		$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
-		
-		// iterate through all rows in result set
-		$row = mysqli_fetch_array($result);
+		$PINDA_ID	= request_text($_GET, 'AMD') ?? '';
+		$row		= db_row("SELECT * FROM ORGANIZER WHERE ORG_ID = ?", [$PINDA_ID]);
 		
 		// extract specific fields
-		$ORG_ID		= $row["ORG_ID"];
-		$ORG_NAME	= $row["ORG_NAME"];
+		$ORG_ID	= $row["ORG_ID"] ?? "";
+		$ORG_NAME	= $row["ORG_NAME"] ?? "";
+		
+		if(!$row)
+		{
+			echo "<center><i> Penganjur tidak dijumpai </i></center>";
+		}
+		else
+		{
 ?>
 						<form id="amd_org" action="ad_org.php" method ="POST">
-							<input type="hidden" name="ID2" value="<?php echo $PINDA_ID; ?>">
+							<input type="hidden" name="ID2" value="<?php echo e($PINDA_ID); ?>">
 							<input type="hidden" name="AMD_ORG" value="YES">
 							<fieldset>
 								<div class="form-group">
 									<label>Kod Penganjur</label>
-									<input class="form-control" type="text" name="ORG_ID" value="<?php echo $ORG_ID; ?>">
+									<input class="form-control" type="text" name="ORG_ID" value="<?php echo e($ORG_ID); ?>">
 								</div>
 								<div class="form-group">
 									<label>Nama Penganjur</label>
-									<input class="form-control" type="text" name="ORG_NAME" value="<?php echo $ORG_NAME; ?>">
+									<input class="form-control" type="text" name="ORG_NAME" value="<?php echo e($ORG_NAME); ?>">
 								</div>
 							</fieldset>
 							<div>
 								<button class="btn btn-primary" type="submit" form="amd_org" value="Submit">Pinda</button>
 							</div>
 						</form>
+<?php
+		}
+?>
 					</div>
 		  		</div>
 <?php
@@ -313,14 +253,14 @@
 								// output student information
 								echo "<tr>";
 								echo "<td align=center>$BIL</td>";
-								echo "<td align=center>$ORG_ID</td>";
+								echo "<td align=center>" . e($ORG_ID) . "</td>";
 								echo "
-									<td>$ORG_NAME</td>
+									<td>" . e($ORG_NAME) . "</td>
 									<td align=\"center\">
-										<a href='ad_org.php?AMD=$ORG_ID'>
+										<a href='ad_org.php?AMD=" . e(urlencode($ORG_ID)) . "'>
 											<button class='btn btn-outline btn-warning btn-sm' type='button' value='Pinda'>Pinda</button>
 										</a>
-										<button class='btn btn-outline btn-danger btn-sm' type='button' value='Padam' onClick='confirmDel(\"$ORG_ID\")'>Padam</button>
+										<button class='btn btn-outline btn-danger btn-sm' type='button' value='Padam' onClick='confirmDel(" . e(js((string) $ORG_ID)) . ")'>Padam</button>
 									</td>";
 								echo "</tr>";
 							}
@@ -364,7 +304,7 @@
 			var del = confirm("Adakah anda pasti untuk memadam penganjur ini?");
 			if (del == true)
 			{
-				window.location.assign("ad_org.php?DEL=" + nums);
+				window.location.assign("ad_org.php?DEL=" + encodeURIComponent(nums));
 			} else 
 			{
 				alert("Penganjur tidak di padam.");

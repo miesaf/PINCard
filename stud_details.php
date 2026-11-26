@@ -1,17 +1,13 @@
+<?php ob_start(); ?>
 <!DOCTYPE html>
 <html>
   <head>
   <?php
 		session_start();
-		if(!$_SESSION['pc_login'] || $_SESSION['pc_priv'] == "BLUE")
-		{
-			header("Location: index.php?err=expired");
-			exit;
-		}
+		require_once __DIR__ . '/connectDB.php';
+		require_once __DIR__ . '/dictionary.php';
+		require_login('REDD', 'BLCK');
 		$name	= $_SESSION['pc_name'];
-		
-		include('connectDB.php');
-		include("dictionary.php");
 	?>
     <title>PINCard</title>
 	
@@ -80,7 +76,7 @@
 		  	<div class="sidebar content-box" style="display: block;">
                 <ul class="nav">
                     <!-- Main menu -->
-                    <?php include("nav.php"); ?>
+                    <?php include __DIR__ . '/nav.php'; ?>
                 </ul>
              </div>
 		  </div>
@@ -94,18 +90,12 @@
 						<table class="table table-bordered table-hover table-striped">
 							<tbody>
 							<?php
-							$ID		= $_GET['ID'];
+							$ID		= request_id($_GET, 'ID');
 							
-							if(($ID != null) && is_numeric($ID))
+							if($ID !== null)
 							{
-								// create the query
-								$sql = "SELECT * FROM STUDENT WHERE STUD_ID = $ID";
-								
-								// execute query
-								$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
-								
 								// iterate through all rows in result set
-								if($row = mysqli_fetch_array($result))
+								if($row = db_row("SELECT * FROM STUDENT WHERE STUD_ID = ?", [$ID]))
 								{									
 									// extract specific fields
 									$STUD_ID 	= $row["STUD_ID"];
@@ -117,44 +107,39 @@
 									$STUD_ROOM	= $row["ROOM"];
 									
 									// Decode codes into string
-									$sql_display = "SELECT PROG FROM PROG WHERE ID_PROG = '$STUD_PROG'";
-									$result_dispay = mysqli_query($condb, $sql_display);
-									while($row = mysqli_fetch_array($result_dispay)) { $DSTUD_PROG = $row["PROG"]; }
-									
-									$sql_display2 = "SELECT KOLEJ FROM KOLEJ WHERE ID_KOLEJ = \"$STUD_KOLEJ\"";
-									$result_dispay2 = mysqli_query($condb, $sql_display2);
-									while($row2 = mysqli_fetch_array($result_dispay2)) { $DSTUD_KOLEJ = $row2["KOLEJ"]; }
+									$DSTUD_PROG		= db_row("SELECT PROG FROM PROG WHERE ID_PROG = ?", [$STUD_PROG])["PROG"] ?? "";
+									$DSTUD_KOLEJ	= db_row("SELECT KOLEJ FROM KOLEJ WHERE ID_KOLEJ = ?", [$STUD_KOLEJ])["KOLEJ"] ?? "";
 									
 									echo "	<tr>
 												<td>Nombor Pelajar</td>
-												<td><b>$STUD_ID</b></td>
+												<td><b>" . e($STUD_ID) . "</b></td>
 											</tr>
 											<tr>
 												<td>Nama Pelajar</td>
-												<td><b>$STUD_NAME</b></td>
+												<td><b>" . e($STUD_NAME) . "</b></td>
 											</tr>
 											<tr>
 												<td>No. K/P Pelajar</td>
-												<td><b>$STUD_IC</b></td>
+												<td><b>" . e($STUD_IC) . "</b></td>
 											</tr>
 											<tr>
 												<td>Program Pengajian</td>
-												<td><b>$STUD_PROG - $DSTUD_PROG</b></td>
+												<td><b>" . e("$STUD_PROG - $DSTUD_PROG") . "</b></td>
 											</tr>
 											<tr>
 												<td>Semester Semasa</td>
-												<td><b>$STUD_SEM</b></td>
+												<td><b>" . e($STUD_SEM) . "</b></td>
 											</tr>
 											<tr>
 												<td>Kolej Kediaman</td>
-												<td><b>$DSTUD_KOLEJ</b></td>
+												<td><b>" . e($DSTUD_KOLEJ) . "</b></td>
 											</tr>
 											<tr>
 												<td>No. Bilik Semasa</td>
-												<td><b>$STUD_ROOM</b></td>
+												<td><b>" . e($STUD_ROOM) . "</b></td>
 											</tr>
 											<tr>
-												<td align=\"center\" colspan=\"2\"><a href='rpt_stud_view.php?ID=$STUD_ID'>
+												<td align=\"center\" colspan=\"2\"><a href='rpt_stud_view.php?ID=" . e($STUD_ID) . "'>
 											<button class='btn btn-outline btn-info' type='button' value='Laporan'>Laporan Kehadiran</button>
 										</a></td>
 											</tr>";
@@ -166,9 +151,10 @@
 							}
 							else
 							{
-								echo "<tr><td align='center'><i> Nombor Peljar tidak sah </i></td></tr>";
+								echo "<tr><td align='center'><i> Nombor Pelajar tidak sah </i></td></tr>";
 							}
 							?>
+
 							</tbody>
 						</table>
 					</div>
