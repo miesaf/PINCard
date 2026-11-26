@@ -23,10 +23,10 @@
 		$sql = "SELECT * FROM EVENT WHERE EVN_ID = $EVN";
 		
 		// execute query
-		$result = mysql_query($sql) or die("SQL select statement failed");
+		$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 		
 		// iterate through all rows in result set
-		if($row = mysql_fetch_array($result))
+		if($row = mysqli_fetch_array($result))
 		{
 			// display barcode
 			$D_BC		= true;
@@ -45,8 +45,8 @@
 			
 			// Display organizer name array
 			$sql_dorg		= "SELECT ORG_NAME FROM ORGANIZER WHERE ORG_ID = \"$EVN_ORG\"";
-			$result_dorg	= mysql_query($sql_dorg);
-			while($row_dorg	= mysql_fetch_array($result_dorg))
+			$result_dorg	= mysqli_query($condb, $sql_dorg);
+			while($row_dorg	= mysqli_fetch_array($result_dorg))
 			{
 				$D_EVN_ORG	= $row_dorg["ORG_NAME"];
 			}
@@ -186,8 +186,8 @@
 <?php
 						// Display organizer name array
 						$sql_dkol		= "SELECT * FROM KOLEJ";
-						$result_dkol	= mysql_query($sql_dkol);
-						while($row_dkol	= mysql_fetch_array($result_dkol))
+						$result_dkol	= mysqli_query($condb, $sql_dkol);
+						while($row_dkol	= mysqli_fetch_array($result_dkol))
 						{
 							$KOL1			= $row_dkol["ID_KOLEJ"];
 							$KOL2			= $row_dkol["KOLEJ"];
@@ -208,10 +208,10 @@
 							$NAME		= null;
 							
 							// execute query
-							$check_result = mysql_query($check_sql) or die("SQL select statement failed");
+							$check_result = mysqli_query($condb, $check_sql) or die("SQL select statement failed");
 							
 							// iterate through all rows in result set
-							if($crow = mysql_fetch_array($check_result))
+							if($crow = mysqli_fetch_array($check_result))
 							{
 								// extract specific fields
 								$NAME		= $crow["NAME"];

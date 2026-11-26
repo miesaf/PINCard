@@ -26,7 +26,7 @@
 				$sql	= "SELECT * FROM STUDENT WHERE KOLEJ = \"$SEL_COL\" ORDER BY NAME";
 			}
 			
-			$result = mysql_query($sql) or die("SQL select statement failed");
+			$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 		}
 		
 		// Padam Pelajar
@@ -43,17 +43,17 @@
 			
 			while($I_DEL < $I_MAX)
 			{
-				$DEL_ID_S	= mysql_real_escape_string($DEL_ID[$I_DEL]);
+				$DEL_ID_S	= mysqli_real_escape_string($condb, $DEL_ID[$I_DEL]);
 				
 				$sql_del	= "DELETE FROM STUDENT WHERE STUD_ID = $DEL_ID_S;";
 				// delete the entry
-				$result = mysql_query("$sql_del"); 
+				$result = mysqli_query($condb, "$sql_del"); 
 				
 				$I_DEL++;
 			}
 			
 			// delete the entry
-			//$result = mysql_query("$sql_del"); 
+			//$result = mysqli_query($condb, "$sql_del"); 
 			
 			// check for deletion
 			if ($result)
@@ -69,7 +69,7 @@
 			}
 			else
 			{
-				//echo "SQL insert statement failed.<br>" . mysql_error();
+				//echo "SQL insert statement failed.<br>";
 				echo '<html>
 						<head>
 							<script>
@@ -182,8 +182,8 @@
 											<option disabled> </option>
 											<?php
 											$sql_choose = "SELECT * FROM KOLEJ ORDER BY KOLEJ";
-											$result_choose = mysql_query($sql_choose);
-											while ($row = mysql_fetch_array($result_choose))
+											$result_choose = mysqli_query($condb, $sql_choose);
+											while ($row = mysqli_fetch_array($result_choose))
 											{
 												$ID_KOLEJ	= $row["ID_KOLEJ"];
 												$KOLEJ	= $row["KOLEJ"];
@@ -232,8 +232,8 @@
 									
 									// Display college name array
 									$sql_dcol		= "SELECT * FROM KOLEJ ORDER BY KOLEJ";
-									$result_dcol	= mysql_query($sql_dcol);
-									while($row_dcol	= mysql_fetch_array($result_dcol))
+									$result_dcol	= mysqli_query($condb, $sql_dcol);
+									while($row_dcol	= mysqli_fetch_array($result_dcol))
 									{
 										$DID_COL		= $row_dcol["ID_KOLEJ"];
 										$DCOL2			= $row_dcol["KOLEJ"];
@@ -242,8 +242,8 @@
 									
 									// Display program name array
 									$sql_dprg		= "SELECT * FROM PROG ORDER BY ID_PROG";
-									$result_dprg	= mysql_query($sql_dprg);
-									while($row_dprg	= mysql_fetch_array($result_dprg))
+									$result_dprg	= mysqli_query($condb, $sql_dprg);
+									while($row_dprg	= mysqli_fetch_array($result_dprg))
 									{
 										$DID_PRG		= $row_dprg["ID_PROG"];
 										$DPRG2			= $row_dprg["PROG"];
@@ -251,7 +251,7 @@
 									}
 									
 									// iterate through all rows in result set
-									while ($row = mysql_fetch_array($result))
+									while ($row = mysqli_fetch_array($result))
 									{
 										$BIL++;
 										$D_BC	= true;
@@ -274,8 +274,8 @@
 										$T_CHOUR	= 0;
 										
 										$sql_att		= "SELECT ATTENDANCE.ATT_CAT, EVENT.EVN_TYPE, EVENT.EVN_HOUR FROM ATTENDANCE INNER JOIN EVENT ON ATTENDANCE.ATT_EVN = EVENT.EVN_ID WHERE ATTENDANCE.ATT_STUD = $STUD_ID";
-										$result_catt	= mysql_query($sql_att);
-										while($row_catt	= mysql_fetch_array($result_catt))
+										$result_catt	= mysqli_query($condb, $sql_att);
+										while($row_catt	= mysqli_fetch_array($result_catt))
 										{
 											$CATT_CAT	= $row_catt["ATT_CAT"];
 											$CATT_TYPE	= $row_catt["EVN_TYPE"];

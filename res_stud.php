@@ -17,7 +17,7 @@
 		if(isset($_GET['DEL']) && ($_GET['DEL'] == "Y"))
 		{
 			// delete the entry
-			$result = mysql_query("DELETE FROM STUDENT"); 
+			$result = mysqli_query($condb, "DELETE FROM STUDENT"); 
 			
 			// check for deletion
 			if ($result)
@@ -33,7 +33,7 @@
 			}
 			else
 			{
-				//echo "SQL insert statement failed.<br>" . mysql_error();
+				//echo "SQL insert statement failed.<br>";
 				echo '<html>
 						<head>
 							<script>

@@ -15,18 +15,18 @@
 		
 		if(isset($_POST['DAFTAR']))
 		{
-			$STUD_ID	= mysql_real_escape_string($_POST['STUD_ID']);
-			$NAME		= mysql_real_escape_string($_POST['NAME']);
-			$IC_NUM		= mysql_real_escape_string($_POST['IC_NUM']);
-			$PROG		= mysql_real_escape_string($_POST['PROG']);
-			$SEM		= mysql_real_escape_string($_POST['SEM']);
-			$KOLEJ		= mysql_real_escape_string($_POST['KOLEJ']);
-			$ROOM		= mysql_real_escape_string($_POST['ROOM']);
+			$STUD_ID	= mysqli_real_escape_string($condb, $_POST['STUD_ID']);
+			$NAME		= mysqli_real_escape_string($condb, $_POST['NAME']);
+			$IC_NUM		= mysqli_real_escape_string($condb, $_POST['IC_NUM']);
+			$PROG		= mysqli_real_escape_string($condb, $_POST['PROG']);
+			$SEM		= mysqli_real_escape_string($condb, $_POST['SEM']);
+			$KOLEJ		= mysqli_real_escape_string($condb, $_POST['KOLEJ']);
+			$ROOM		= mysqli_real_escape_string($condb, $_POST['ROOM']);
 			
 			$sql="INSERT INTO STUDENT (STUD_ID, NAME, IC_NUM, PROG, SEM, KOLEJ, ROOM) VALUES ($STUD_ID, \"$NAME\", $IC_NUM, \"$PROG\", \"$SEM\", \"$KOLEJ\", \"$ROOM\")";
 			
 			// execute query
-			$exe_sql = mysql_query($sql);
+			$exe_sql = mysqli_query($condb, $sql);
 			
 			// confirming the record is added
 			if ($exe_sql)
@@ -42,7 +42,7 @@
 			}
 			else
 			{
-				echo "SQL insert statement failed.<br>" . mysql_error();
+				echo "SQL insert statement failed.<br>";
 				echo '<html>
 						<head>
 							<script>
@@ -154,8 +154,8 @@
 										<option disabled> </option>
 										<?php
 										$sql_choose = "SELECT * FROM PROG ORDER BY PROG";
-										$result_choose = mysql_query($sql_choose);
-										while ($row = mysql_fetch_array($result_choose))
+										$result_choose = mysqli_query($condb, $sql_choose);
+										while ($row = mysqli_fetch_array($result_choose))
 										{
 											$ID_PROG	= $row["ID_PROG"];
 											$PROG		= $row["PROG"];
@@ -175,8 +175,8 @@
 										<option disabled> </option>
 										<?php
 										$sql_choose = "SELECT * FROM KOLEJ ORDER BY KOLEJ";
-										$result_choose = mysql_query($sql_choose);
-										while ($row = mysql_fetch_array($result_choose))
+										$result_choose = mysqli_query($condb, $sql_choose);
+										while ($row = mysqli_fetch_array($result_choose))
 										{
 											$ID_KOLEJ	= $row["ID_KOLEJ"];
 											$KOLEJ		= $row["KOLEJ"];

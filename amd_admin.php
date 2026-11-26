@@ -16,12 +16,12 @@
 		// Pinda Akaun
 		if(isset($_POST['AMD_ACC']))
 		{
-			$ID2		= mysql_real_escape_string($_POST['ID2']);
-			$NO_ID		= mysql_real_escape_string($_POST['NO_ID']);
-			$NAME		= mysql_real_escape_string($_POST['NAME']);
-			$KL1		= mysql_real_escape_string($_POST['KL1']);
-			$KL2		= mysql_real_escape_string($_POST['KL2']);
-			$TYPE		= mysql_real_escape_string($_POST['TYPE']);
+			$ID2		= mysqli_real_escape_string($condb, $_POST['ID2']);
+			$NO_ID		= mysqli_real_escape_string($condb, $_POST['NO_ID']);
+			$NAME		= mysqli_real_escape_string($condb, $_POST['NAME']);
+			$KL1		= mysqli_real_escape_string($condb, $_POST['KL1']);
+			$KL2		= mysqli_real_escape_string($condb, $_POST['KL2']);
+			$TYPE		= mysqli_real_escape_string($condb, $_POST['TYPE']);
 			
 			if($KL1 == "my_old_password")
 			{
@@ -34,7 +34,7 @@
 					$sql="UPDATE ADMIN SET NO_ID = $NO_ID, NAME = '$NAME', PWORD = '$KL1', TYPE = '$TYPE' WHERE NO_ID = '$ID2'";
 					
 					// execute query
-					$exe_sql = mysql_query($sql);
+					$exe_sql = mysqli_query($condb, $sql);
 					
 					// confirming the record is added
 					if ($exe_sql)
@@ -50,7 +50,7 @@
 					}
 					else
 					{
-						echo "SQL insert statement failed.<br>" . mysql_error();
+						echo "SQL insert statement failed.<br>";
 						echo '<html>
 								<head>
 									<script>
@@ -162,10 +162,10 @@
 							$sql = "SELECT * FROM ADMIN WHERE NO_ID = $PINDA_ID";
 							
 							// execute query
-							$result = mysql_query($sql) or die("SQL select statement failed");
+							$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 							
 							// iterate through all rows in result set
-							$row = mysql_fetch_array($result);
+							$row = mysqli_fetch_array($result);
 							
 							// extract specific fields
 							$NO_ID		= $row["NO_ID"];

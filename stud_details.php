@@ -102,10 +102,10 @@
 								$sql = "SELECT * FROM STUDENT WHERE STUD_ID = $ID";
 								
 								// execute query
-								$result = mysql_query($sql) or die("SQL select statement failed");
+								$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 								
 								// iterate through all rows in result set
-								if($row = mysql_fetch_array($result))
+								if($row = mysqli_fetch_array($result))
 								{									
 									// extract specific fields
 									$STUD_ID 	= $row["STUD_ID"];
@@ -118,12 +118,12 @@
 									
 									// Decode codes into string
 									$sql_display = "SELECT PROG FROM PROG WHERE ID_PROG = '$STUD_PROG'";
-									$result_dispay = mysql_query($sql_display);
-									while($row = mysql_fetch_array($result_dispay)) { $DSTUD_PROG = $row["PROG"]; }
+									$result_dispay = mysqli_query($condb, $sql_display);
+									while($row = mysqli_fetch_array($result_dispay)) { $DSTUD_PROG = $row["PROG"]; }
 									
 									$sql_display2 = "SELECT KOLEJ FROM KOLEJ WHERE ID_KOLEJ = \"$STUD_KOLEJ\"";
-									$result_dispay2 = mysql_query($sql_display2);
-									while($row2 = mysql_fetch_array($result_dispay2)) { $DSTUD_KOLEJ = $row2["KOLEJ"]; }
+									$result_dispay2 = mysqli_query($condb, $sql_display2);
+									while($row2 = mysqli_fetch_array($result_dispay2)) { $DSTUD_KOLEJ = $row2["KOLEJ"]; }
 									
 									echo "	<tr>
 												<td>Nombor Pelajar</td>

@@ -15,16 +15,16 @@
 		
 		if(isset($_POST['DAFTAR']))
 		{
-			$EVN_NAME		= mysql_real_escape_string($_POST['EVN_NAME']);
-			$EVN_ORG		= mysql_real_escape_string($_POST['EVN_ORG']);
-			$EVN_TYPE		= mysql_real_escape_string($_POST['EVN_TYPE']);
-			$EVN_HOUR		= mysql_real_escape_string($_POST['EVN_HOUR']);
-			$EVN_VENUE		= mysql_real_escape_string($_POST['EVN_VENUE']);
-			$EVN_DATE		= mysql_real_escape_string($_POST['EVN_DATE']);
+			$EVN_NAME		= mysqli_real_escape_string($condb, $_POST['EVN_NAME']);
+			$EVN_ORG		= mysqli_real_escape_string($condb, $_POST['EVN_ORG']);
+			$EVN_TYPE		= mysqli_real_escape_string($condb, $_POST['EVN_TYPE']);
+			$EVN_HOUR		= mysqli_real_escape_string($condb, $_POST['EVN_HOUR']);
+			$EVN_VENUE		= mysqli_real_escape_string($condb, $_POST['EVN_VENUE']);
+			$EVN_DATE		= mysqli_real_escape_string($condb, $_POST['EVN_DATE']);
 			
 			if($EVN_HOUR > $HOUR_LIM)
 			{
-				echo "SQL insert statement failed.<br>" . mysql_error();
+				echo "SQL insert statement failed.<br>";
 				echo '<html>
 						<head>
 							<script>
@@ -101,8 +101,8 @@
 				// End of Event ID Generator
 				
 				$sql_evn_id		= "SELECT COUNT(EVN_NAME) FROM EVENT WHERE EVN_ID LIKE \"$DATE%\"";
-				$result_evn_id	= mysql_query($sql_evn_id);
-				$row_evn_id		= mysql_fetch_array($result_evn_id);
+				$result_evn_id	= mysqli_query($condb, $sql_evn_id);
+				$row_evn_id		= mysqli_fetch_array($result_evn_id);
 				$id_count		= $row_evn_id["COUNT(EVN_NAME)"];
 				$id_inc			= $id_count + 1;
 				
@@ -117,7 +117,7 @@
 				$sql="INSERT INTO EVENT (EVN_ID, EVN_NAME, EVN_ORG, EVN_TYPE, EVN_HOUR, EVN_VENUE, EVN_DATE, EVN_RB, EVN_RT) VALUES ('$EVN_ID', '$EVN_NAME', '$EVN_ORG', '$EVN_TYPE', $EVN_HOUR, '$EVN_VENUE', '$EVN_DATE', '$EVN_RB', '$EVN_RT')";
 				
 				// execute query
-				$exe_sql = mysql_query($sql);
+				$exe_sql = mysqli_query($condb, $sql);
 				
 				// confirming the record is added
 				if ($exe_sql)
@@ -133,7 +133,7 @@
 				}
 				else
 				{
-					echo "SQL insert statement failed.<br>" . mysql_error();
+					echo "SQL insert statement failed.<br>";
 					echo '<html>
 							<head>
 								<script>
@@ -238,8 +238,8 @@
 										<option disabled> </option>
 										<?php
 										$sql_choose = "SELECT * FROM ORGANIZER ORDER BY ORG_NAME";
-										$result_choose = mysql_query($sql_choose);
-										while ($row = mysql_fetch_array($result_choose))
+										$result_choose = mysqli_query($condb, $sql_choose);
+										while ($row = mysqli_fetch_array($result_choose))
 										{
 											$ORG_ID		= $row["ORG_ID"];
 											$ORG_NAME	= $row["ORG_NAME"];

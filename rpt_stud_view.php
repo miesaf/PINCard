@@ -107,8 +107,8 @@
 							$D_BC	= false;
 							
 							$sql_display1	= "SELECT * FROM STUDENT WHERE STUD_ID = $ID";
-							$result_dispay1	= mysql_query($sql_display1);
-							if($row1 = mysql_fetch_array($result_dispay1))
+							$result_dispay1	= mysqli_query($condb, $sql_display1);
+							if($row1 = mysqli_fetch_array($result_dispay1))
 							{
 								$D_STD		= true;
 								
@@ -124,12 +124,12 @@
 							if($D_STD == true)
 							{
 								$sql_display2 = "SELECT PROG FROM PROG WHERE ID_PROG = \"$STD_PROG\"";
-								$result_dispay2 = mysql_query($sql_display2);
-								while($row2 = mysql_fetch_array($result_dispay2)) { $D_STD_PROG = $row2["PROG"]; }
+								$result_dispay2 = mysqli_query($condb, $sql_display2);
+								while($row2 = mysqli_fetch_array($result_dispay2)) { $D_STD_PROG = $row2["PROG"]; }
 								
 								$sql_display3 = "SELECT KOLEJ FROM KOLEJ WHERE ID_KOLEJ = \"$STD_COL\"";
-								$result_dispay3 = mysql_query($sql_display3);
-								while($row3 = mysql_fetch_array($result_dispay3)) { $D_STD_COL = $row3["KOLEJ"]; }
+								$result_dispay3 = mysqli_query($condb, $sql_display3);
+								while($row3 = mysqli_fetch_array($result_dispay3)) { $D_STD_COL = $row3["KOLEJ"]; }
 								
 								echo "<thead>
 										<tr>
@@ -191,10 +191,10 @@
 								$sql	= "SELECT * FROM ATTENDANCE LEFT JOIN EVENT ON ATTENDANCE.ATT_EVN = EVENT.EVN_ID WHERE ATTENDANCE.ATT_STUD = $STD_ID ORDER BY EVENT.EVN_DATE";
 								
 								// execute query
-								$result = mysql_query($sql) or die("SQL select statement failed");
+								$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 								
 								// iterate through all rows in result set
-								while($row = mysql_fetch_array($result))
+								while($row = mysqli_fetch_array($result))
 								{
 									$BIL++;
 									
@@ -211,8 +211,8 @@
 									// Decode codes into string
 									$sql_display = "SELECT EVN_NAME, EVN_HOUR, EVN_DATE FROM EVENT WHERE EVN_ID = $ATT_EVN";
 									
-									$result_dispay = mysql_query($sql_display);
-									while($row = mysql_fetch_array($result_dispay))
+									$result_dispay = mysqli_query($condb, $sql_display);
+									while($row = mysqli_fetch_array($result_dispay))
 									{
 										$EVN_NAME	= $row["EVN_NAME"];
 										$EVN_HOUR	= $row["EVN_HOUR"];

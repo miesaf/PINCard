@@ -26,10 +26,10 @@
 		
 		if(isset($_POST["REG_ATT"]))
 		{
-			$ATT_STUD	= mysql_real_escape_string($_POST['ATT_STUD']);
-			$ATT_EVN	= mysql_real_escape_string($_POST['ATT_EVN']);
-			$ATT_CAT	= mysql_real_escape_string($_POST['ATT_CAT']);
-			$ATT_CRDT	= mysql_real_escape_string($_POST['ATT_CRDT']);
+			$ATT_STUD	= mysqli_real_escape_string($condb, $_POST['ATT_STUD']);
+			$ATT_EVN	= mysqli_real_escape_string($condb, $_POST['ATT_EVN']);
+			$ATT_CAT	= mysqli_real_escape_string($condb, $_POST['ATT_CAT']);
+			$ATT_CRDT	= mysqli_real_escape_string($condb, $_POST['ATT_CRDT']);
 			
 			// Event ID Generator
 			$h = "8";	// to rematch time with Malaysian GMT +8 time (please truncate the +/- sign)
@@ -100,9 +100,9 @@
 			$sqlz="SELECT ATT_STUD, ATT_EVN FROM ATTENDANCE WHERE ATT_STUD = $ATT_STUD AND ATT_EVN = $ATT_EVN";
 			
 			// execute query
-			$exe_sqlz = mysql_query($sqlz);
+			$exe_sqlz = mysqli_query($condb, $sqlz);
 			
-			if(mysql_fetch_array($exe_sqlz))
+			if(mysqli_fetch_array($exe_sqlz))
 			{
 				echo '<html>
 						<head>
@@ -118,7 +118,7 @@
 				$sql="INSERT INTO ATTENDANCE (ATT_STUD, ATT_EVN, ATT_TIME, ATT_CAT, ATT_CRDT) VALUES ($ATT_STUD, $ATT_EVN, '$ATT_TIME', $ATT_CAT, $ATT_CRDT)";
 				
 				// execute query
-				$exe_sql = mysql_query($sql);
+				$exe_sql = mysqli_query($condb, $sql);
 				
 				// confirming the record is added
 				if ($exe_sql)
@@ -134,7 +134,7 @@
 				}
 				else
 				{
-					echo "SQL insert statement failed.<br>" . mysql_error();
+					echo "SQL insert statement failed.<br>";
 					echo '<html>
 							<head>
 								<script>
@@ -153,10 +153,10 @@
 			$sql = "SELECT * FROM EVENT WHERE EVN_ID = $EVN";
 			
 			// execute query
-			$result = mysql_query($sql) or die("SQL select statement failed");
+			$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 			
 			// iterate through all rows in result set
-			if($row = mysql_fetch_array($result))
+			if($row = mysqli_fetch_array($result))
 			{
 				// display barcode
 				$D_BC		= true;
@@ -175,8 +175,8 @@
 				
 				// Display organizer name array
 				$sql_dorg		= "SELECT ORG_NAME FROM ORGANIZER WHERE ORG_ID = \"$EVN_ORG\"";
-				$result_dorg	= mysql_query($sql_dorg);
-				while($row_dorg	= mysql_fetch_array($result_dorg))
+				$result_dorg	= mysqli_query($condb, $sql_dorg);
+				while($row_dorg	= mysqli_fetch_array($result_dorg))
 				{
 					$D_EVN_ORG	= $row_dorg["ORG_NAME"];
 				}
@@ -354,10 +354,10 @@
 						$check_sql	= "SELECT STUD_ID, NAME, SEM, KOLEJ, ROOM FROM STUDENT WHERE STUD_ID = $CHECK_ID";
 						
 						// execute query
-						$check_result = mysql_query($check_sql) or die("SQL select statement failed");
+						$check_result = mysqli_query($condb, $check_sql) or die("SQL select statement failed");
 						
 						// iterate through all rows in result set
-						if($crow = mysql_fetch_array($check_result))
+						if($crow = mysqli_fetch_array($check_result))
 						{								
 							// extract specific fields
 							$STUD_ID 	= $crow["STUD_ID"];
@@ -368,8 +368,8 @@
 							
 							// Display organizer name array
 							$sql_dkol		= "SELECT KOLEJ FROM KOLEJ WHERE ID_KOLEJ = \"$KOLEJ\"";
-							$result_dkol	= mysql_query($sql_dkol);
-							while($row_dkol	= mysql_fetch_array($result_dkol))
+							$result_dkol	= mysqli_query($condb, $sql_dkol);
+							while($row_dkol	= mysqli_fetch_array($result_dkol))
 							{
 								$D_KOLEJ	= $row_dkol["KOLEJ"];
 							}

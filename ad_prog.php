@@ -17,14 +17,14 @@
 		if(isset($_POST['REG']))
 		{	
 			// Variables from tadbir_program.php
-			$ID_PROG	= mysql_real_escape_string($_POST['ID_PROG']);
-			$PROG		= mysql_real_escape_string($_POST['PROG']);
+			$ID_PROG	= mysqli_real_escape_string($condb, $_POST['ID_PROG']);
+			$PROG		= mysqli_real_escape_string($condb, $_POST['PROG']);
 
 			//SQL query command
 			$sql="INSERT INTO PROG (ID_PROG, PROG) VALUES ('$ID_PROG', '$PROG')";
 			
 			// execute query
-			$exe_sql = mysql_query($sql);
+			$exe_sql = mysqli_query($condb, $sql);
 			
 			// confirming the record is added
 			if ($exe_sql)
@@ -40,7 +40,7 @@
 			}
 			else
 			{
-				echo "SQL insert statement failed.<br>" . mysql_error();
+				echo "SQL insert statement failed.<br>";
 				echo '<html>
 						<head>
 							<script>
@@ -55,14 +55,14 @@
 		// Pinda Akaun
 		if(isset($_POST['AMD_PRG']))
 		{
-			$ID2		= mysql_real_escape_string($_POST['ID2']);
-			$ID_PROG	= mysql_real_escape_string($_POST['ID_PROG']);
-			$PROG		= mysql_real_escape_string($_POST['PROG']);
+			$ID2		= mysqli_real_escape_string($condb, $_POST['ID2']);
+			$ID_PROG	= mysqli_real_escape_string($condb, $_POST['ID_PROG']);
+			$PROG		= mysqli_real_escape_string($condb, $_POST['PROG']);
 
 			$sql="UPDATE PROG SET ID_PROG = '$ID_PROG', PROG = '$PROG' WHERE ID_PROG = '$ID2'";
 			
 			// execute query
-			$exe_sql = mysql_query($sql);
+			$exe_sql = mysqli_query($condb, $sql);
 			
 			// confirming the record is added
 			if ($exe_sql)
@@ -78,7 +78,7 @@
 			}
 			else
 			{
-				echo "SQL insert statement failed.<br>" . mysql_error();
+				echo "SQL insert statement failed.<br>";
 				echo '<html>
 						<head>
 							<script>
@@ -94,10 +94,10 @@
 		if(isset($_GET['DEL']))
 		{
 			// get ID value
-			$ID = mysql_real_escape_string($_GET['DEL']);
+			$ID = mysqli_real_escape_string($condb, $_GET['DEL']);
 			
 			// delete the entry
-			$result = mysql_query("DELETE FROM PROG WHERE ID_PROG = \"$ID\""); 
+			$result = mysqli_query($condb, "DELETE FROM PROG WHERE ID_PROG = \"$ID\""); 
 			
 			// check for deletion
 			if ($result)
@@ -113,7 +113,7 @@
 			}
 			else
 			{
-				//echo "SQL insert statement failed.<br>" . mysql_error();
+				//echo "SQL insert statement failed.<br>";
 				echo '<html>
 						<head>
 							<script>
@@ -127,7 +127,7 @@
 		
 		$sql	= "SELECT * FROM PROG ORDER BY ID_PROG";
 		
-		$result = mysql_query($sql) or die("SQL select statement failed");
+		$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 	?>
     <title>PINCard</title>
 	
@@ -250,10 +250,10 @@
 		$sql = "SELECT * FROM PROG WHERE ID_PROG = \"$PINDA_ID\"";
 		
 		// execute query
-		$result = mysql_query($sql) or die("SQL select statement failed");
+		$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 		
 		// iterate through all rows in result set
-		$row = mysql_fetch_array($result);
+		$row = mysqli_fetch_array($result);
 		
 		// extract specific fields
 		$ID_PROG	= $row["ID_PROG"];
@@ -302,7 +302,7 @@
 							$D_BC	= false;
 							
 							// iterate through all rows in result set
-							while ($row = mysql_fetch_array($result))
+							while ($row = mysqli_fetch_array($result))
 							{
 								$BIL++;
 								$D_BC	= true;

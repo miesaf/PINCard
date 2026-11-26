@@ -102,10 +102,10 @@
 								$sql = "SELECT * FROM EVENT WHERE EVN_ID = $ID";
 								
 								// execute query
-								$result = mysql_query($sql) or die("SQL select statement failed");
+								$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 								
 								// iterate through all rows in result set
-								if($row = mysql_fetch_array($result))
+								if($row = mysqli_fetch_array($result))
 								{									
 									// extract specific fields
 									$EVN_ID 	= $row["EVN_ID"];
@@ -128,12 +128,12 @@
 									
 									// Decode codes into string
 									$sql_display = "SELECT ORG_NAME FROM ORGANIZER WHERE ORG_ID = '$EVN_ORG'";
-									$result_dispay = mysql_query($sql_display);
-									while($row = mysql_fetch_array($result_dispay)) { $DEVN_ORG = $row["ORG_NAME"]; }
+									$result_dispay = mysqli_query($condb, $sql_display);
+									while($row = mysqli_fetch_array($result_dispay)) { $DEVN_ORG = $row["ORG_NAME"]; }
 									
 									$sql_display = "SELECT NAME FROM ADMIN WHERE NO_ID = $EVN_RB";
-									$result_dispay = mysql_query($sql_display);
-									while($row = mysql_fetch_array($result_dispay)) { $DEVN_RB = $row["NAME"]; }
+									$result_dispay = mysqli_query($condb, $sql_display);
+									while($row = mysqli_fetch_array($result_dispay)) { $DEVN_RB = $row["NAME"]; }
 									
 									echo "	<tr>
 												<td>ID Program</td>

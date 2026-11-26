@@ -29,17 +29,17 @@
 			
 			while($I_DEL < $I_MAX)
 			{
-				$DEL_ID_S	= mysql_real_escape_string($DEL_ID[$I_DEL]);
+				$DEL_ID_S	= mysqli_real_escape_string($condb, $DEL_ID[$I_DEL]);
 				
 				$sql_del	= "DELETE FROM ATTENDANCE WHERE ATT_ID = $DEL_ID_S;";
 				// delete the entry
-				$result = mysql_query("$sql_del"); 
+				$result = mysqli_query($condb, "$sql_del"); 
 				
 				$I_DEL++;
 			}
 			
 			// delete the entry
-			//$result = mysql_query("$sql_del"); 
+			//$result = mysqli_query($condb, "$sql_del"); 
 			
 			// check for deletion
 			if ($result)
@@ -55,7 +55,7 @@
 			}
 			else
 			{
-				//echo "SQL insert statement failed.<br>" . mysql_error();
+				//echo "SQL insert statement failed.<br>";
 				echo '<html>
 						<head>
 							<script>
@@ -154,8 +154,8 @@
 								$D_BC	= false;
 								
 								$sql_display1	= "SELECT * FROM EVENT WHERE EVN_ID = $ID";
-								$result_dispay1	= mysql_query($sql_display1);
-								if($row1 = mysql_fetch_array($result_dispay1))
+								$result_dispay1	= mysqli_query($condb, $sql_display1);
+								if($row1 = mysqli_fetch_array($result_dispay1))
 								{
 									$C_EVN		= true;
 									
@@ -175,8 +175,8 @@
 								if($C_EVN == true)
 								{
 									$sql_display2 = "SELECT ORG_NAME FROM ORGANIZER WHERE ORG_ID = \"$EVN_ORG\"";
-									$result_dispay2 = mysql_query($sql_display2);
-									while($row2 = mysql_fetch_array($result_dispay2)) { $ORG_NAME = $row2["ORG_NAME"]; }
+									$result_dispay2 = mysqli_query($condb, $sql_display2);
+									while($row2 = mysqli_fetch_array($result_dispay2)) { $ORG_NAME = $row2["ORG_NAME"]; }
 									
 									echo "<thead>
 											<tr>
@@ -230,10 +230,10 @@
 									$sql = "SELECT * FROM ATTENDANCE WHERE ATT_EVN = $ID ORDER BY ATT_CAT, ATT_STUD";
 									
 									// execute query
-									$result = mysql_query($sql) or die("SQL select statement failed");
+									$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 									
 									// iterate through all rows in result set
-									while($row = mysql_fetch_array($result))
+									while($row = mysqli_fetch_array($result))
 									{
 										$BIL++;
 										
@@ -250,8 +250,8 @@
 										
 										// Decode codes into string
 										$sql_display = "SELECT NAME FROM STUDENT WHERE STUD_ID = '$ATT_STUD'";
-										$result_dispay = mysql_query($sql_display);
-										while($row = mysql_fetch_array($result_dispay)) { $STUD_NAME = $row["NAME"]; }
+										$result_dispay = mysqli_query($condb, $sql_display);
+										while($row = mysqli_fetch_array($result_dispay)) { $STUD_NAME = $row["NAME"]; }
 										
 										echo "<tr>
 												<td align=\"center\">$BIL</td>

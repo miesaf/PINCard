@@ -16,14 +16,14 @@
 		// Tambah kolej kediaman
 		if(isset($_POST['REG']))
 		{	
-			$ID_KOLEJ	= mysql_real_escape_string($_POST['ID_KOLEJ']);
-			$KOLEJ		= mysql_real_escape_string($_POST['KOLEJ']);
+			$ID_KOLEJ	= mysqli_real_escape_string($condb, $_POST['ID_KOLEJ']);
+			$KOLEJ		= mysqli_real_escape_string($condb, $_POST['KOLEJ']);
 
 			//SQL query command
 			$sql="INSERT INTO KOLEJ (ID_KOLEJ, KOLEJ) VALUES ('$ID_KOLEJ', '$KOLEJ')";
 			
 			// execute query
-			$exe_sql = mysql_query($sql);
+			$exe_sql = mysqli_query($condb, $sql);
 			
 			// confirming the record is added
 			if ($exe_sql)
@@ -39,7 +39,7 @@
 			}
 			else
 			{
-				echo "SQL insert statement failed.<br>" . mysql_error();
+				echo "SQL insert statement failed.<br>";
 				echo '<html>
 						<head>
 							<script>
@@ -54,14 +54,14 @@
 		// Pinda kolej kediaman
 		if(isset($_POST['AMD_COL']))
 		{
-			$ID2		= mysql_real_escape_string($_POST['ID2']);
-			$ID_KOLEJ	= mysql_real_escape_string($_POST['ID_KOLEJ']);
-			$KOLEJ		= mysql_real_escape_string($_POST['KOLEJ']);
+			$ID2		= mysqli_real_escape_string($condb, $_POST['ID2']);
+			$ID_KOLEJ	= mysqli_real_escape_string($condb, $_POST['ID_KOLEJ']);
+			$KOLEJ		= mysqli_real_escape_string($condb, $_POST['KOLEJ']);
 
 			$sql="UPDATE KOLEJ SET ID_KOLEJ = '$ID_KOLEJ', KOLEJ = '$KOLEJ' WHERE ID_KOLEJ = '$ID2'";
 			
 			// execute query
-			$exe_sql = mysql_query($sql);
+			$exe_sql = mysqli_query($condb, $sql);
 			
 			// confirming the record is added
 			if ($exe_sql)
@@ -77,7 +77,7 @@
 			}
 			else
 			{
-				echo "SQL insert statement failed.<br>" . mysql_error();
+				echo "SQL insert statement failed.<br>";
 				echo '<html>
 						<head>
 							<script>
@@ -93,10 +93,10 @@
 		if(isset($_GET['DEL']))
 		{
 			// get ID value
-			$ID = mysql_real_escape_string($_GET['DEL']);
+			$ID = mysqli_real_escape_string($condb, $_GET['DEL']);
 			
 			// delete the entry
-			$result = mysql_query("DELETE FROM KOLEJ WHERE ID_KOLEJ = \"$ID\""); 
+			$result = mysqli_query($condb, "DELETE FROM KOLEJ WHERE ID_KOLEJ = \"$ID\""); 
 			
 			// check for deletion
 			if ($result)
@@ -112,7 +112,7 @@
 			}
 			else
 			{
-				//echo "SQL insert statement failed.<br>" . mysql_error();
+				//echo "SQL insert statement failed.<br>";
 				echo '<html>
 						<head>
 							<script>
@@ -126,7 +126,7 @@
 		
 		$sql	= "SELECT * FROM KOLEJ ORDER BY KOLEJ";
 		
-		$result = mysql_query($sql) or die("SQL select statement failed");
+		$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 	?>
     <title>PINCard</title>
 	
@@ -249,10 +249,10 @@
 		$sql = "SELECT * FROM KOLEJ WHERE ID_KOLEJ = \"$PINDA_ID\"";
 		
 		// execute query
-		$result = mysql_query($sql) or die("SQL select statement failed");
+		$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 		
 		// iterate through all rows in result set
-		$row = mysql_fetch_array($result);
+		$row = mysqli_fetch_array($result);
 		
 		// extract specific fields
 		$ID_KOLEJ	= $row["ID_KOLEJ"];
@@ -301,7 +301,7 @@
 							$D_BC	= false;
 							
 							// iterate through all rows in result set
-							while ($row = mysql_fetch_array($result))
+							while ($row = mysqli_fetch_array($result))
 							{
 								$BIL++;
 								$D_BC	= true;

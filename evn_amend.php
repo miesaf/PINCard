@@ -16,17 +16,17 @@
 		// Pinda Akaun
 		if(isset($_POST['evn_amend']))
 		{
-			$ID2		= mysql_real_escape_string($_POST['ID2']);
-			$EVN_NAME	= mysql_real_escape_string($_POST['EVN_NAME']);
-			$EVN_ORG	= mysql_real_escape_string($_POST['EVN_ORG']);
-			$EVN_TYPE	= mysql_real_escape_string($_POST['EVN_TYPE']);
-			$EVN_HOUR	= mysql_real_escape_string($_POST['EVN_HOUR']);
-			$EVN_VENUE	= mysql_real_escape_string($_POST['EVN_VENUE']);
-			$EVN_DATE	= mysql_real_escape_string($_POST['EVN_DATE']);
+			$ID2		= mysqli_real_escape_string($condb, $_POST['ID2']);
+			$EVN_NAME	= mysqli_real_escape_string($condb, $_POST['EVN_NAME']);
+			$EVN_ORG	= mysqli_real_escape_string($condb, $_POST['EVN_ORG']);
+			$EVN_TYPE	= mysqli_real_escape_string($condb, $_POST['EVN_TYPE']);
+			$EVN_HOUR	= mysqli_real_escape_string($condb, $_POST['EVN_HOUR']);
+			$EVN_VENUE	= mysqli_real_escape_string($condb, $_POST['EVN_VENUE']);
+			$EVN_DATE	= mysqli_real_escape_string($condb, $_POST['EVN_DATE']);
 			
 			if($EVN_HOUR > $HOUR_LIM)
 			{
-				echo "SQL insert statement failed.<br>" . mysql_error();
+				echo "SQL insert statement failed.<br>";
 				echo '<html>
 						<head>
 							<script>
@@ -41,7 +41,7 @@
 				$sql="UPDATE EVENT SET EVN_NAME = '$EVN_NAME', EVN_ORG = '$EVN_ORG', EVN_TYPE = '$EVN_TYPE', EVN_HOUR = $EVN_HOUR, EVN_VENUE = '$EVN_VENUE', EVN_DATE = '$EVN_DATE' WHERE EVN_ID = '$ID2'";
 			
 				// execute query
-				$exe_sql = mysql_query($sql);
+				$exe_sql = mysqli_query($condb, $sql);
 				
 				// confirming the record is added
 				if ($exe_sql)
@@ -57,7 +57,7 @@
 				}
 				else
 				{
-					echo "SQL insert statement failed.<br>" . mysql_error();
+					echo "SQL insert statement failed.<br>";
 					echo '<html>
 							<head>
 								<script>
@@ -157,10 +157,10 @@
 							$sql = "SELECT * FROM EVENT WHERE EVN_ID = $PINDA_ID";
 							
 							// execute query
-							$result = mysql_query($sql) or die("SQL select statement failed");
+							$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 							
 							// iterate through all rows in result set
-							$row = mysql_fetch_array($result);
+							$row = mysqli_fetch_array($result);
 							
 							// extract specific fields
 							$EVN_NAME	= $row["EVN_NAME"];
@@ -186,8 +186,8 @@
 										<option disabled> </option>
 										<?php
 										$sql_choose = "SELECT * FROM ORGANIZER ORDER BY ORG_NAME";
-										$result_choose = mysql_query($sql_choose);
-										while ($row = mysql_fetch_array($result_choose))
+										$result_choose = mysqli_query($condb, $sql_choose);
+										while ($row = mysqli_fetch_array($result_choose))
 										{
 											$ORG_ID		= $row["ORG_ID"];
 											$ORG_NAME	= $row["ORG_NAME"];

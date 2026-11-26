@@ -17,10 +17,10 @@
 		if(isset($_GET['DEL']))
 		{
 			// get ID value
-			$ID = mysql_real_escape_string($_GET['DEL']);
+			$ID = mysqli_real_escape_string($condb, $_GET['DEL']);
 			
 			// delete the entry
-			$result = mysql_query("DELETE FROM ADMIN WHERE NO_ID = \"$ID\""); 
+			$result = mysqli_query($condb, "DELETE FROM ADMIN WHERE NO_ID = \"$ID\""); 
 			
 			// check for deletion
 			if ($result)
@@ -36,7 +36,7 @@
 			}
 			else
 			{
-				//echo "SQL insert statement failed.<br>" . mysql_error();
+				//echo "SQL insert statement failed.<br>";
 				echo '<html>
 						<head>
 							<script>
@@ -50,7 +50,7 @@
 		
 		$sql	= "SELECT * FROM ADMIN ORDER BY NAME";
 		
-		$result = mysql_query($sql) or die("SQL select statement failed");
+		$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 	?>
     <title>PINCard</title>
 	
@@ -145,7 +145,7 @@
 							$D_BC	= false;
 							
 							// iterate through all rows in result set
-							while ($row = mysql_fetch_array($result))
+							while ($row = mysqli_fetch_array($result))
 							{
 								$BIL++;
 								$D_BC	= true;

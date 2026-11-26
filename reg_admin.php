@@ -17,11 +17,11 @@
 		if(isset($_POST['DAFTAR']))
 		{	
 			// Variables from tadbir_program.php
-			$NO_ID		= mysql_real_escape_string($_POST['NO_ID']);
-			$NAME		= mysql_real_escape_string($_POST['NAME']);
-			$PWORD1		= mysql_real_escape_string($_POST['PWORD1']);
-			$PWORD2		= mysql_real_escape_string($_POST['PWORD2']);
-			$TYPE		= mysql_real_escape_string($_POST['TYPE']);
+			$NO_ID		= mysqli_real_escape_string($condb, $_POST['NO_ID']);
+			$NAME		= mysqli_real_escape_string($condb, $_POST['NAME']);
+			$PWORD1		= mysqli_real_escape_string($condb, $_POST['PWORD1']);
+			$PWORD2		= mysqli_real_escape_string($condb, $_POST['PWORD2']);
+			$TYPE		= mysqli_real_escape_string($condb, $_POST['TYPE']);
 			
 			if($PWORD1 == $PWORD2)
 			{
@@ -29,7 +29,7 @@
 				$sql="INSERT INTO ADMIN (NO_ID, NAME, PWORD, TYPE) VALUES ($NO_ID, '$NAME', '$PWORD1', '$TYPE')";
 				
 				// execute query
-				$exe_sql = mysql_query($sql);
+				$exe_sql = mysqli_query($condb, $sql);
 				
 				// confirming the record is added
 				if ($exe_sql)
@@ -45,7 +45,7 @@
 				}
 				else
 				{
-					echo "SQL insert statement failed.<br>" . mysql_error();
+					echo "SQL insert statement failed.<br>";
 					echo '<html>
 							<head>
 								<script>

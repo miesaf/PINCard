@@ -16,14 +16,14 @@
 		// Tambah kelab
 		if(isset($_POST['REG']))
 		{	
-			$ORG_ID		= mysql_real_escape_string($_POST['ORG_ID']);
-			$ORG_NAME	= mysql_real_escape_string($_POST['ORG_NAME']);
+			$ORG_ID		= mysqli_real_escape_string($condb, $_POST['ORG_ID']);
+			$ORG_NAME	= mysqli_real_escape_string($condb, $_POST['ORG_NAME']);
 
 			//SQL query command
 			$sql="INSERT INTO ORGANIZER (ORG_ID, ORG_NAME) VALUES ('$ORG_ID', '$ORG_NAME')";
 			
 			// execute query
-			$exe_sql = mysql_query($sql);
+			$exe_sql = mysqli_query($condb, $sql);
 			
 			// confirming the record is added
 			if ($exe_sql)
@@ -39,7 +39,7 @@
 			}
 			else
 			{
-				echo "SQL insert statement failed.<br>" . mysql_error();
+				echo "SQL insert statement failed.<br>";
 				echo '<html>
 						<head>
 							<script>
@@ -54,14 +54,14 @@
 		// Pinda Akaun
 		if(isset($_POST['AMD_ORG']))
 		{
-			$ID2		= mysql_real_escape_string($_POST['ID2']);
-			$ORG_ID		= mysql_real_escape_string($_POST['ORG_ID']);
-			$ORG_NAME	= mysql_real_escape_string($_POST['ORG_NAME']);
+			$ID2		= mysqli_real_escape_string($condb, $_POST['ID2']);
+			$ORG_ID		= mysqli_real_escape_string($condb, $_POST['ORG_ID']);
+			$ORG_NAME	= mysqli_real_escape_string($condb, $_POST['ORG_NAME']);
 
 			$sql="UPDATE ORGANIZER SET ORG_ID = '$ORG_ID', ORG_NAME = '$ORG_NAME' WHERE ORG_ID = '$ID2'";
 			
 			// execute query
-			$exe_sql = mysql_query($sql);
+			$exe_sql = mysqli_query($condb, $sql);
 			
 			// confirming the record is added
 			if ($exe_sql)
@@ -77,7 +77,7 @@
 			}
 			else
 			{
-				echo "SQL insert statement failed.<br>" . mysql_error();
+				echo "SQL insert statement failed.<br>";
 				echo '<html>
 						<head>
 							<script>
@@ -93,10 +93,10 @@
 		if(isset($_GET['DEL']))
 		{
 			// get ID value
-			$ID = mysql_real_escape_string($_GET['DEL']);
+			$ID = mysqli_real_escape_string($condb, $_GET['DEL']);
 			
 			// delete the entry
-			$result = mysql_query("DELETE FROM ORGANIZER WHERE ORG_ID = \"$ID\""); 
+			$result = mysqli_query($condb, "DELETE FROM ORGANIZER WHERE ORG_ID = \"$ID\""); 
 			
 			// check for deletion
 			if ($result)
@@ -112,7 +112,7 @@
 			}
 			else
 			{
-				//echo "SQL insert statement failed.<br>" . mysql_error();
+				//echo "SQL insert statement failed.<br>";
 				echo '<html>
 						<head>
 							<script>
@@ -126,7 +126,7 @@
 		
 		$sql	= "SELECT * FROM ORGANIZER ORDER BY ORG_ID";
 		
-		$result = mysql_query($sql) or die("SQL select statement failed");
+		$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 	?>
     <title>PINCard</title>
 	
@@ -249,10 +249,10 @@
 		$sql = "SELECT * FROM ORGANIZER WHERE ORG_ID = \"$PINDA_ID\"";
 		
 		// execute query
-		$result = mysql_query($sql) or die("SQL select statement failed");
+		$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 		
 		// iterate through all rows in result set
-		$row = mysql_fetch_array($result);
+		$row = mysqli_fetch_array($result);
 		
 		// extract specific fields
 		$ORG_ID		= $row["ORG_ID"];
@@ -301,7 +301,7 @@
 							$D_BC	= false;
 							
 							// iterate through all rows in result set
-							while ($row = mysql_fetch_array($result))
+							while ($row = mysqli_fetch_array($result))
 							{
 								$BIL++;
 								$D_BC	= true;

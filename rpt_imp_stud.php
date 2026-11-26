@@ -116,8 +116,8 @@
 <?php
 						// Display organizer name array
 						$sql_dkol		= "SELECT * FROM KOLEJ";
-						$result_dkol	= mysql_query($sql_dkol);
-						while($row_dkol	= mysql_fetch_array($result_dkol))
+						$result_dkol	= mysqli_query($condb, $sql_dkol);
+						while($row_dkol	= mysqli_fetch_array($result_dkol))
 						{
 							$KOL1			= $row_dkol["ID_KOLEJ"];
 							$KOL2			= $row_dkol["KOLEJ"];
@@ -126,8 +126,8 @@
 						
 						// Display organizer name array
 						$sql_dprog		= "SELECT * FROM PROG";
-						$result_dprog	= mysql_query($sql_dprog);
-						while($row_dprog	= mysql_fetch_array($result_dprog))
+						$result_dprog	= mysqli_query($condb, $sql_dprog);
+						while($row_dprog	= mysqli_fetch_array($result_dprog))
 						{
 							$PROG1			= $row_dprog["ID_PROG"];
 							$PROG2			= $row_dprog["PROG"];
@@ -154,12 +154,12 @@
 							$check_sql	= "SELECT * FROM STUDENT WHERE STUD_ID = $STUD_ID";
 							
 							// execute query
-							$check_result = mysql_query($check_sql) or die("SQL select statement failed");
+							$check_result = mysqli_query($condb, $check_sql) or die("SQL select statement failed");
 							
 							// iterate through all rows in result set
 							if($STAT == "BER")
 							{
-								$crow = mysql_fetch_array($check_result);
+								$crow = mysqli_fetch_array($check_result);
 								
 								// extract specific fields
 								$NAME		= $crow["NAME"];

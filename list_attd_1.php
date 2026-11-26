@@ -26,7 +26,7 @@
 				$sql	= "SELECT * FROM EVENT WHERE EVN_ORG = \"$SEL_ORG\" ORDER BY EVN_DATE DESC";
 			}
 			
-			$result = mysql_query($sql) or die("SQL select statement failed");
+			$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 		}
 	?>
     <title>PINCard</title>
@@ -131,8 +131,8 @@
 											<option disabled> </option>
 											<?php
 											$sql_choose = "SELECT * FROM ORGANIZER ORDER BY ORG_NAME";
-											$result_choose = mysql_query($sql_choose);
-											while ($row = mysql_fetch_array($result_choose))
+											$result_choose = mysqli_query($condb, $sql_choose);
+											while ($row = mysqli_fetch_array($result_choose))
 											{
 												$ORG_ID		= $row["ORG_ID"];
 												$ORG_NAME	= $row["ORG_NAME"];
@@ -174,8 +174,8 @@
 								
 								// Display organizer name array
                                 $sql_dorg		= "SELECT * FROM ORGANIZER ORDER BY ORG_ID";
-                                $result_dorg	= mysql_query($sql_dorg);
-                                while($row_dorg	= mysql_fetch_array($result_dorg))
+                                $result_dorg	= mysqli_query($condb, $sql_dorg);
+                                while($row_dorg	= mysqli_fetch_array($result_dorg))
                                 {
                                     $DID_ORG		= $row_dorg["ORG_ID"];
                                     $DORG2			= $row_dorg["ORG_NAME"];
@@ -184,8 +184,8 @@
 								
 								// Display registrar name array
                                 $sql_dadm		= "SELECT NO_ID, NAME FROM ADMIN ORDER BY NO_ID";
-                                $result_dadm	= mysql_query($sql_dadm);
-                                while($row_dadm	= mysql_fetch_array($result_dadm))
+                                $result_dadm	= mysqli_query($condb, $sql_dadm);
+                                while($row_dadm	= mysqli_fetch_array($result_dadm))
                                 {
                                     $DID_ADM		= $row_dadm["NO_ID"];
                                     $DADM2			= $row_dadm["NAME"];
@@ -193,7 +193,7 @@
 								}
 								
 								// iterate through all rows in result set
-                                while ($row = mysql_fetch_array($result))
+                                while ($row = mysqli_fetch_array($result))
                                 {
                                     $BIL++;
 									$D_BC	= true;

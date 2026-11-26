@@ -26,9 +26,9 @@
 		
 		if(isset($_POST["REG_ATT"]))
 		{
-			$ATT_EVN	= mysql_real_escape_string($_POST['ATT_EVN']);
-			$ATT_CAT	= mysql_real_escape_string($_POST['ATT_CAT']);
-			$ATT_CRDT	= mysql_real_escape_string($_POST['ATT_CRDT']);
+			$ATT_EVN	= mysqli_real_escape_string($condb, $_POST['ATT_EVN']);
+			$ATT_CAT	= mysqli_real_escape_string($condb, $_POST['ATT_CAT']);
+			$ATT_CRDT	= mysqli_real_escape_string($condb, $_POST['ATT_CRDT']);
 			
 			$ATT_BER	=	$_SESSION["pc_ram_b"];
 			$ATT_GAG	=	$_SESSION["pc_ram_g"];
@@ -110,9 +110,9 @@
 				$sqlz="SELECT ATT_STUD, ATT_EVN FROM ATTENDANCE WHERE ATT_STUD = $ATT_BER[$I_ATT] AND ATT_EVN = $ATT_EVN";
 				
 				// execute query
-				$exe_sqlz = mysql_query($sqlz);
+				$exe_sqlz = mysqli_query($condb, $sqlz);
 				
-				if(mysql_fetch_array($exe_sqlz))
+				if(mysqli_fetch_array($exe_sqlz))
 				{
 					array_push($VER_ID, $ATT_BER[$I_ATT]);
 					array_push($VER_STAT, "DUP");
@@ -122,7 +122,7 @@
 					$sql="INSERT INTO ATTENDANCE (ATT_STUD, ATT_EVN, ATT_TIME, ATT_CAT, ATT_CRDT) VALUES ($ATT_BER[$I_ATT], $ATT_EVN, '$ATT_TIME', $ATT_CAT, $ATT_CRDT)";
 					
 					// execute query
-					$exe_sql = mysql_query($sql);
+					$exe_sql = mysqli_query($condb, $sql);
 					
 					if ($exe_sql)
 					{
@@ -179,10 +179,10 @@
 			$sql = "SELECT * FROM EVENT WHERE EVN_ID = $EVN";
 			
 			// execute query
-			$result = mysql_query($sql) or die("SQL select statement failed");
+			$result = mysqli_query($condb, $sql) or die("SQL select statement failed");
 			
 			// iterate through all rows in result set
-			if($row = mysql_fetch_array($result))
+			if($row = mysqli_fetch_array($result))
 			{
 				// display barcode
 				$D_BC		= true;
@@ -201,8 +201,8 @@
 				
 				// Display organizer name array
 				$sql_dorg		= "SELECT ORG_NAME FROM ORGANIZER WHERE ORG_ID = \"$EVN_ORG\"";
-				$result_dorg	= mysql_query($sql_dorg);
-				while($row_dorg	= mysql_fetch_array($result_dorg))
+				$result_dorg	= mysqli_query($condb, $sql_dorg);
+				while($row_dorg	= mysqli_fetch_array($result_dorg))
 				{
 					$D_EVN_ORG	= $row_dorg["ORG_NAME"];
 				}
@@ -494,8 +494,8 @@
 <?php
 							// Display organizer name array
 							$sql_dkol		= "SELECT * FROM KOLEJ";
-							$result_dkol	= mysql_query($sql_dkol);
-							while($row_dkol	= mysql_fetch_array($result_dkol))
+							$result_dkol	= mysqli_query($condb, $sql_dkol);
+							while($row_dkol	= mysqli_fetch_array($result_dkol))
 							{
 								$KOL1			= $row_dkol["ID_KOLEJ"];
 								$KOL2			= $row_dkol["KOLEJ"];
@@ -506,7 +506,7 @@
 							{
 								$BIL_T++;
 								
-								$getData[0]	= mysql_real_escape_string($getData[0]);
+								$getData[0]	= mysqli_real_escape_string($condb, $getData[0]);
 								
 								$NO_PEL[]	= $getData[0];
 								
@@ -517,10 +517,10 @@
 								$ROOM		= null;
 								
 								// execute query
-								$check_result = mysql_query($check_sql) or die("SQL select statement failed");
+								$check_result = mysqli_query($condb, $check_sql) or die("SQL select statement failed");
 								
 								// iterate through all rows in result set
-								if($crow = mysql_fetch_array($check_result))
+								if($crow = mysqli_fetch_array($check_result))
 								{
 									$BIL_W++;
 									array_push($PEL_B, $getData[0]);
